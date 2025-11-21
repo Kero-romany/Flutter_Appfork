@@ -40,7 +40,7 @@ class _SignInState extends State<SignIn> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "login page",
+                  "login ",
                   style: TextStyle(
                     fontSize: 36,
                     fontWeight: FontWeight.bold,
