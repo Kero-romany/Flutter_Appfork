@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:sakkeny_app/pages/Saved_List.dart';
+import 'package:sakkeny_app/pages/HomePage.dart';
+import 'package:sakkeny_app/pages/bottom_nav.dart';
 import 'package:sakkeny_app/pages/sign_in.dart';
 
 const Color primaryDarkGreen = Color(0xFF386B5D);
@@ -16,10 +17,8 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: SignUpPage(),
-    );
+    return  SignUpPage();
+
   }
 }
 
@@ -68,7 +67,7 @@ class _SignUpPageState extends State<SignUpPage> {
       ).showSnackBar(const SnackBar(content: Text('Processing Sign Up Data')));
       Navigator.of(
         context,
-      ).pushReplacement(MaterialPageRoute(builder: (context) => Saved()));
+      ).pushReplacement(MaterialPageRoute(builder: (context) => Navigation()));
     }
   }
 
@@ -207,6 +206,7 @@ class _SignUpPageState extends State<SignUpPage> {
                               context,
                               'Enter Phone Number',
                               keyboardType: TextInputType.phone,
+                              maxlength: 11,
                             ),
 
                             _buildLabel(context, 'Email'),
@@ -411,14 +411,19 @@ class _SignUpPageState extends State<SignUpPage> {
     bool obscureText = false,
     Widget? suffixIcon,
     String? Function(String?)? validator,
+    int? maxlength,
+
   }) {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
       obscureText: obscureText,
+      maxLength: maxlength,
       validator: validator,
+      
       style: const TextStyle(fontSize: 14),
       decoration: InputDecoration(
+        counter:Offstage(),
         hintText: hintText,
         hintStyle: const TextStyle(color: Colors.grey),
         suffixIcon: suffixIcon,

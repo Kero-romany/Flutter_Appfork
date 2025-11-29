@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:sakkeny_app/pages/HomePage.dart';
 import 'package:sakkeny_app/pages/splash_screen.dart';
 
 void main() {
-  runApp(MaterialApp(home: MyApp()));
+  runApp(MyApp());
 }
 
 class MyApp extends StatefulWidget {
@@ -15,6 +16,8 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(title: 'Saknni App', home: const SplashScreen());
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'Saknni App', home:  SplashScreen());
   }
 }

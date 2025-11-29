@@ -1,49 +1,108 @@
 import 'package:flutter/material.dart';
+import 'package:sakkeny_app/models/cards.dart';
 import 'package:sakkeny_app/pages/FilterPage.dart';
+import 'package:sakkeny_app/pages/SearchPage.dart';
+import 'package:sakkeny_app/pages/bottom_nav.dart';
+import 'package:sakkeny_app/pages/property.dart';
 
 class HomePage extends StatelessWidget {
-  const HomePage({Key? key}) : super(key: key);
-
-  // Data lists
-  final List<String> _prices = const [
-    '7,000',
-    '8,000',
-    '6,500',
-    '5,900',
-    '4,000',
-    '9,000'
-  ];
-
-  final List<String> _titles = const [
-    'Apartment for sale',
-    'Fully Furnished',
-    'Apartment for Rent',
-    'Finished Apartment',
-    'Panaromic sea view',
-    'Golden Opportunity'
-  ];
-
-  final List<String> _locations = const [
-    'Madinaty, Cairo',
-    'Zamalek, Cairo',
-    'Feryal, Assuit',
-    'Gomhorya, Assuit',
-    'Ras Soma, Red Sea',
-    'Mountain View'
-  ];
-
-  final List<String> _images = const [
-    'assets/images/p1.jpg',
-    'assets/images/p2.jpg',
-    'assets/images/p3.jpg',
-    'assets/images/p4.jpg',
-    'assets/images/p5.jpg',
-    'assets/images/p6.jpg',
-  ];
+  final List<PropertyModel> _properties = [
+  PropertyModel(
+    price: "7,000",
+    title: "Apartment for Sale",
+    location: "Madinaty, Cairo, Egypt",
+    image: "assets/images/p1.jpg",
+    description: "Modern apartment surrounded by green spaces, great investment opportunity.",
+    isWifi: true,
+    Livingroom: 2,
+    bedroom: 3,
+    bathroom: 2,
+    balcony: 1,
+    kitchen: 1,
+    rating: 4.6,
+    reviews: 315,
+  ),
+  PropertyModel(
+    price: "8,000",
+    title: "Fully Furnished Apartment",
+    location: "Zamalek, Cairo, Egypt",
+    image: "assets/images/p2.jpg",
+    description: "Luxury apartment with modern furniture near the Nile and all services.",
+    isWifi: true,
+    Livingroom: 1,
+    bedroom: 2,
+    bathroom: 1,
+    balcony: 2,
+    kitchen: 1,
+    rating: 4.8,
+    reviews: 427,
+  ),
+  PropertyModel(
+    price: "6,500",
+    title: "Apartment for Rent",
+    location: "Feryal Street, Assiut, Egypt",
+    image: "assets/images/p3.jpg",
+    description: "Quiet location, suitable for families or university students.",
+    isWifi: false,
+    Livingroom: 1,
+    bedroom: 3,
+    bathroom: 1,
+    balcony: 1,
+    kitchen: 1,
+    rating: 4.2,
+    reviews: 142,
+  ),
+  PropertyModel(
+    price: "5,900",
+    title: "Finished Apartment",
+    location: "Gomhorya, Assiut, Egypt",
+    image: "assets/images/p4.jpg",
+    description: "Fully finished and ready to move in, near transportation.",
+    isWifi: false,
+    Livingroom: 2,
+    bedroom: 2,
+    bathroom: 1,
+    balcony: 0,
+    kitchen: 1,
+    rating: 4.0,
+    reviews: 88,
+  ),
+  PropertyModel(
+    price: "4,000",
+    title: "Panoramic Sea View Chalet",
+    location: "Ras Soma, Red Sea, Egypt",
+    image: "assets/images/p5.jpg",
+    description: "Chalet with direct sea view, great for vacation rentals.",
+    isWifi: true,
+    Livingroom: 1,
+    bedroom: 2,
+    bathroom: 2,
+    balcony: 3,
+    kitchen: 1,
+    rating: 4.9,
+    reviews: 765,
+  ),
+  PropertyModel(
+    price: "9,000",
+    title: "Luxury Villa",
+    location: "Mountain View, New Cairo, Egypt",
+    image: "assets/images/p6.jpg",
+    description: "Premium compound villa with landscape view and private parking.",
+    isWifi: true,
+    Livingroom: 3,
+    bedroom: 4,
+    bathroom: 3,
+    balcony: 2,
+    kitchen: 2,
+    rating: 4.7,
+    reviews: 540,
+  ),
+];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
@@ -54,7 +113,7 @@ class HomePage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Location Section *****************************
+                  // Location Section
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -90,22 +149,39 @@ class HomePage extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
 
-                  // Search Bar (NEW WORKING TEXTFIELD) ***********************************
+                  // ✅ FIXED Search Bar - Now navigates to PropertySearchPage
                   Row(
                     children: [
                       Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          decoration: BoxDecoration(
-                            color: Colors.grey[100],
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                          child: const TextField(
-                            decoration: InputDecoration(
-                              icon: Icon(Icons.search, color: Colors.grey),
-                              border: InputBorder.none,
-                              hintText: 'Search by city, street...',
-                              hintStyle: TextStyle(color: Colors.grey),
+                        child: GestureDetector(
+                          onTap: () {
+                            // Navigate to search page
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => PropertySearchPage(properties: _properties),                              ),
+                            );
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 14,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.grey[100],
+                              borderRadius: BorderRadius.circular(30),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.search, color: Colors.grey[600]),
+                                const SizedBox(width: 12),
+                                Text(
+                                  'Search by city, street...',
+                                  style: TextStyle(
+                                    color: Colors.grey[600],
+                                    fontSize: 15,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
@@ -118,20 +194,22 @@ class HomePage extends StatelessWidget {
                           shape: BoxShape.circle,
                         ),
                         child: IconButton(
-                          icon: const Icon(Icons.filter_list, color: Colors.black), onPressed:() 
-                          {  Navigator.of(context).push(
-                                        MaterialPageRoute(
-                                          builder: (context) => const FilterPage(),
-                                        ),
-                                      ); },
-                          ),
+                          icon: const Icon(Icons.filter_list, color: Colors.black),
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => const FilterPage(),
+                              ),
+                            );
+                          },
+                        ),
                       ),
                     ],
                   ),
 
                   const SizedBox(height: 20),
 
-                  // Recommended Header ***************************************
+                  // Recommended Header
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: const [
@@ -156,7 +234,7 @@ class HomePage extends StatelessWidget {
               ),
             ),
 
-            // Property Grid ***************************************
+            // ✅ FIXED Property Grid - Added missing PropertyCard widget
             Expanded(
               child: GridView.builder(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -166,13 +244,28 @@ class HomePage extends StatelessWidget {
                   mainAxisSpacing: 12,
                   childAspectRatio: 0.75,
                 ),
-                itemCount: _prices.length,
+                itemCount: _properties.length,
                 itemBuilder: (context, index) {
-                  return PropertyCard(
-                    price: _prices[index],
-                    title: _titles[index],
-                    location: _locations[index],
-                    imagePath: _images[index],
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => PropertyDetailsPage(
+                            price: _properties[index].price,
+                            title: _properties[index].title,
+                            location: _properties[index].location,
+                            image: _properties[index].image, description: _properties[index].description, isWifi: _properties[index].isWifi, Livingroom: _properties[index].Livingroom, bedroom: _properties[index].bedroom, bathroom: _properties[index].bathroom, balcony: _properties[index].balcony, kitchen: _properties[index].kitchen, rating: _properties[index].rating, reviews: _properties[index].reviews,
+                          ),
+                        ),
+                      );
+                    },
+                    // ✅ ADDED: The missing child widget!
+                    child: PropertyCard(
+                      price: _properties[index].price,
+                      title: _properties[index].title,
+                      location: _properties[index].location,
+                      imagePath: _properties[index].image,
+                    ),
                   );
                 },
               ),
@@ -180,8 +273,6 @@ class HomePage extends StatelessWidget {
           ],
         ),
       ),
-
-     
     );
   }
 }
@@ -235,8 +326,7 @@ class PropertyCard extends StatelessWidget {
             Align(
               alignment: Alignment.topRight,
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
                   color: Colors.black.withOpacity(0.5),
                   borderRadius: BorderRadius.circular(15),
@@ -244,9 +334,10 @@ class PropertyCard extends StatelessWidget {
                 child: Text(
                   'EGP$price /Month',
                   style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold),
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
@@ -258,14 +349,18 @@ class PropertyCard extends StatelessWidget {
                 Text(
                   title,
                   style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold),
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   location,
-                  style: const TextStyle(color: Colors.white, fontSize: 11),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                  ),
                 ),
               ],
             ),
