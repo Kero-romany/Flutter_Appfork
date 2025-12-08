@@ -1,108 +1,123 @@
 import 'package:flutter/material.dart';
 import 'package:sakkeny_app/models/cards.dart';
+import 'package:sakkeny_app/pages/AddApartmentPage.dart';
 import 'package:sakkeny_app/pages/FilterPage.dart';
 import 'package:sakkeny_app/pages/SearchPage.dart';
+import 'package:sakkeny_app/pages/profile.dart';
 import 'package:sakkeny_app/pages/property.dart';
 
 class HomePage extends StatelessWidget {
   final List<PropertyModel> _properties = [
-  PropertyModel(
-    price: "7,000",
-    title: "Apartment for Sale",
-    location: "Madinaty, Cairo, Egypt",
-    image: "assets/images/p1.jpg",
-    description: "Modern apartment surrounded by green spaces, great investment opportunity.",
-    isWifi: true,
-    Livingroom: 2,
-    bedroom: 3,
-    bathroom: 2,
-    balcony: 1,
-    kitchen: 1,
-    rating: 4.6,
-    reviews: 315,
-  ),
-  PropertyModel(
-    price: "8,000",
-    title: "Fully Furnished Apartment",
-    location: "Zamalek, Cairo, Egypt",
-    image: "assets/images/p2.jpg",
-    description: "Luxury apartment with modern furniture near the Nile and all services.",
-    isWifi: true,
-    Livingroom: 1,
-    bedroom: 2,
-    bathroom: 1,
-    balcony: 2,
-    kitchen: 1,
-    rating: 4.8,
-    reviews: 427,
-  ),
-  PropertyModel(
-    price: "6,500",
-    title: "Apartment for Rent",
-    location: "Feryal Street, Assiut, Egypt",
-    image: "assets/images/p3.jpg",
-    description: "Quiet location, suitable for families or university students.",
-    isWifi: false,
-    Livingroom: 1,
-    bedroom: 3,
-    bathroom: 1,
-    balcony: 1,
-    kitchen: 1,
-    rating: 4.2,
-    reviews: 142,
-  ),
-  PropertyModel(
-    price: "5,900",
-    title: "Finished Apartment",
-    location: "Gomhorya, Assiut, Egypt",
-    image: "assets/images/p4.jpg",
-    description: "Fully finished and ready to move in, near transportation.",
-    isWifi: false,
-    Livingroom: 2,
-    bedroom: 2,
-    bathroom: 1,
-    balcony: 0,
-    kitchen: 1,
-    rating: 4.0,
-    reviews: 88,
-  ),
-  PropertyModel(
-    price: "4,000",
-    title: "Panoramic Sea View Chalet",
-    location: "Ras Soma, Red Sea, Egypt",
-    image: "assets/images/p5.jpg",
-    description: "Chalet with direct sea view, great for vacation rentals.",
-    isWifi: true,
-    Livingroom: 1,
-    bedroom: 2,
-    bathroom: 2,
-    balcony: 3,
-    kitchen: 1,
-    rating: 4.9,
-    reviews: 765,
-  ),
-  PropertyModel(
-    price: "9,000",
-    title: "Luxury Villa",
-    location: "Mountain View, New Cairo, Egypt",
-    image: "assets/images/p6.jpg",
-    description: "Premium compound villa with landscape view and private parking.",
-    isWifi: true,
-    Livingroom: 3,
-    bedroom: 4,
-    bathroom: 3,
-    balcony: 2,
-    kitchen: 2,
-    rating: 4.7,
-    reviews: 540,
-  ),
-];
+    PropertyModel(
+      price: "7,000",
+      title: "Apartment for Sale",
+      location: "Madinaty, Cairo, Egypt",
+      image: "assets/images/p1.jpg",
+      description:
+          "Modern apartment surrounded by green spaces, great investment opportunity.",
+      isWifi: true,
+      Livingroom: 2,
+      bedroom: 3,
+      bathroom: 2,
+      balcony: 1,
+      kitchen: 1,
+      rating: 4.6,
+      reviews: 315,
+    ),
+    PropertyModel(
+      price: "8,000",
+      title: "Fully Furnished Apartment",
+      location: "Zamalek, Cairo, Egypt",
+      image: "assets/images/p2.jpg",
+      description:
+          "Luxury apartment with modern furniture near the Nile and all services.",
+      isWifi: true,
+      Livingroom: 1,
+      bedroom: 2,
+      bathroom: 1,
+      balcony: 2,
+      kitchen: 1,
+      rating: 4.8,
+      reviews: 427,
+    ),
+    PropertyModel(
+      price: "6,500",
+      title: "Apartment for Rent",
+      location: "Feryal Street, Assiut, Egypt",
+      image: "assets/images/p3.jpg",
+      description:
+          "Quiet location, suitable for families or university students.",
+      isWifi: false,
+      Livingroom: 1,
+      bedroom: 3,
+      bathroom: 1,
+      balcony: 1,
+      kitchen: 1,
+      rating: 4.2,
+      reviews: 142,
+    ),
+    PropertyModel(
+      price: "5,900",
+      title: "Finished Apartment",
+      location: "Gomhorya, Assiut, Egypt",
+      image: "assets/images/p4.jpg",
+      description: "Fully finished and ready to move in, near transportation.",
+      isWifi: false,
+      Livingroom: 2,
+      bedroom: 2,
+      bathroom: 1,
+      balcony: 0,
+      kitchen: 1,
+      rating: 4.0,
+      reviews: 88,
+    ),
+    PropertyModel(
+      price: "4,000",
+      title: "Panoramic Sea View Chalet",
+      location: "Ras Soma, Red Sea, Egypt",
+      image: "assets/images/p5.jpg",
+      description: "Chalet with direct sea view, great for vacation rentals.",
+      isWifi: true,
+      Livingroom: 1,
+      bedroom: 2,
+      bathroom: 2,
+      balcony: 3,
+      kitchen: 1,
+      rating: 4.9,
+      reviews: 765,
+    ),
+    PropertyModel(
+      price: "9,000",
+      title: "Luxury Villa",
+      location: "Mountain View, New Cairo, Egypt",
+      image: "assets/images/p6.jpg",
+      description:
+          "Premium compound villa with landscape view and private parking.",
+      isWifi: true,
+      Livingroom: 3,
+      bedroom: 4,
+      bathroom: 3,
+      balcony: 2,
+      kitchen: 2,
+      rating: 4.7,
+      reviews: 540,
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      
       backgroundColor: Colors.white,
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: Color(0xFF276152),
+        foregroundColor: Colors.white,
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (context) => const AddApartmentPage()),
+          );
+        },
+        child: const Icon(Icons.add),
+      ),
       body: SafeArea(
         child: Column(
           children: [
@@ -138,12 +153,25 @@ class HomePage extends StatelessWidget {
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
-                              Icon(Icons.keyboard_arrow_down),
+                              IconButton(
+                                icon: Icon(Icons.keyboard_arrow_down, size: 20),
+                                onPressed: List.empty,
+                              ),
                             ],
                           ),
                         ],
                       ),
-                      const Icon(Icons.notifications_outlined, size: 28),
+                      IconButton(
+                        icon: const Icon(Icons.notifications_none, size: 28),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => NotificationsPage(),
+                            ),
+                          );
+                        },
+                      ),
                     ],
                   ),
                   const SizedBox(height: 20),
@@ -157,7 +185,9 @@ class HomePage extends StatelessWidget {
                             // Navigate to search page
                             Navigator.of(context).push(
                               MaterialPageRoute(
-                                builder: (context) => PropertySearchPage(properties: _properties),                              ),
+                                builder: (context) =>
+                                    PropertySearchPage(properties: _properties),
+                              ),
                             );
                           },
                           child: Container(
@@ -193,7 +223,10 @@ class HomePage extends StatelessWidget {
                           shape: BoxShape.circle,
                         ),
                         child: IconButton(
-                          icon: const Icon(Icons.filter_list, color: Colors.black),
+                          icon: const Icon(
+                            Icons.filter_list,
+                            color: Colors.black,
+                          ),
                           onPressed: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
@@ -219,12 +252,14 @@ class HomePage extends StatelessWidget {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      Text(
-                        'See all',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Color(0xFF276152),
-                          fontWeight: FontWeight.w600,
+                      TextButton(
+                        onPressed: List.empty,
+                        child: Text(
+                          'See All',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Color(0xFF276152),
+                          ),
                         ),
                       ),
                     ],
@@ -253,7 +288,16 @@ class HomePage extends StatelessWidget {
                             price: _properties[index].price,
                             title: _properties[index].title,
                             location: _properties[index].location,
-                            image: _properties[index].image, description: _properties[index].description, isWifi: _properties[index].isWifi, Livingroom: _properties[index].Livingroom, bedroom: _properties[index].bedroom, bathroom: _properties[index].bathroom, balcony: _properties[index].balcony, kitchen: _properties[index].kitchen, rating: _properties[index].rating, reviews: _properties[index].reviews,
+                            image: _properties[index].image,
+                            description: _properties[index].description,
+                            isWifi: _properties[index].isWifi,
+                            Livingroom: _properties[index].Livingroom,
+                            bedroom: _properties[index].bedroom,
+                            bathroom: _properties[index].bathroom,
+                            balcony: _properties[index].balcony,
+                            kitchen: _properties[index].kitchen,
+                            rating: _properties[index].rating,
+                            reviews: _properties[index].reviews,
                           ),
                         ),
                       );
@@ -299,10 +343,7 @@ class PropertyCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
-        image: DecorationImage(
-          image: AssetImage(imagePath),
-          fit: BoxFit.cover,
-        ),
+        image: DecorationImage(image: AssetImage(imagePath), fit: BoxFit.cover),
       ),
       child: Container(
         padding: const EdgeInsets.all(12),
@@ -311,10 +352,7 @@ class PropertyCard extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Colors.transparent,
-              Colors.black.withOpacity(0.7),
-            ],
+            colors: [Colors.transparent, Colors.black.withOpacity(0.7)],
           ),
         ),
         child: Column(
@@ -325,7 +363,10 @@ class PropertyCard extends StatelessWidget {
             Align(
               alignment: Alignment.topRight,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.black.withOpacity(0.5),
                   borderRadius: BorderRadius.circular(15),
@@ -356,10 +397,7 @@ class PropertyCard extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   location,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 11,
-                  ),
+                  style: const TextStyle(color: Colors.white, fontSize: 11),
                 ),
               ],
             ),

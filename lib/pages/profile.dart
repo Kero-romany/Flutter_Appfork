@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:sakkeny_app/pages/Settings';
+import 'package:sakkeny_app/pages/Settings.dart';
 import 'package:sakkeny_app/pages/sign_in.dart';
 
 class ProfileScreen extends StatefulWidget {
