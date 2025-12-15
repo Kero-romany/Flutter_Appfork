@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:sakkeny_app/pages/My_Appartments.dart';
 
 class AddApartmentPage extends StatefulWidget {
   const AddApartmentPage({super.key});
@@ -14,7 +15,7 @@ class _AddApartmentPageState extends State<AddApartmentPage> {
     "Air Conditioner",
     "In-unit Laundry",
     "Nearby Gym",
-    "Elevator",
+    "Elevator", 
     "Doorman",
     "Nearby Garage",
     "Dishwasher",
@@ -151,7 +152,12 @@ class _AddApartmentPageState extends State<AddApartmentPage> {
                     borderRadius: BorderRadius.circular(16),
                   ),
                 ),
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (context) => const MyListingsPage()));},
+
+                
                 child: const Text(
                   "Publish Apartment", 
                   style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: Colors.white),
