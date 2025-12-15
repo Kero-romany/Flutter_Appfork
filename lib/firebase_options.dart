@@ -85,4 +85,5 @@ class DefaultFirebaseOptions {
     storageBucket: 'flutter-saknni-app.firebasestorage.app',
     measurementId: 'G-RP9B2V5RV6',
   );
+
 }
