@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:sakkeny_app/pages/Startup%20pages/sign_in.dart';
@@ -16,8 +18,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return  SignUpPage();
-
+    return SignUpPage();
   }
 }
 
@@ -47,8 +48,12 @@ class SignUpPage extends StatefulWidget {
 class _SignUpPageState extends State<SignUpPage> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController =
-      TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _firstNameController = TextEditingController();
+  final TextEditingController _lastNameController = TextEditingController();
+  final TextEditingController _phoneNumberController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
 
@@ -58,17 +63,66 @@ class _SignUpPageState extends State<SignUpPage> {
     _confirmPasswordController.dispose();
     super.dispose();
   }
+  final CollectionReference users = FirebaseFirestore.instance.collection('users');
 
-  void _submitForm() {
-    if (_formKey.currentState!.validate()) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Processing Sign Up Data')));
-      Navigator.of(
-        context,
-      ).pushReplacement(MaterialPageRoute(builder: (context) => Navigation()));
+ Future<void> addUserDetails(String uid) async {
+  await users.doc(uid).set({
+    'first name': _firstNameController.text.trim(),
+    'last name': _lastNameController.text.trim(),
+    'phone number': _phoneNumberController.text.trim(),
+    'email': _emailController.text.trim(),
+    'createdAt': Timestamp.now(),
+    'updatedAt': Timestamp.now(),
+    'userId': uid,
+    'isVerified': false,
+  });
+}
+
+
+  void _submitForm() async {
+  if (_formKey.currentState!.validate()) {
+    try {
+      // 1️⃣ Create user in Firebase Auth
+      UserCredential userCredential =
+          await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
+
+      final String uid = userCredential.user!.uid;
+
+      // 2️⃣ Save user data in Firestore
+      await addUserDetails(uid);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Account created successfully')),
+      );
+
+      // 3️⃣ Navigate
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => Navigation()),
+      );
+    } on FirebaseAuthException catch (e) {
+      String message = 'Something went wrong';
+
+      if (e.code == 'email-already-in-use') {
+        message = 'Email already exists';
+      } else if (e.code == 'weak-password') {
+        message = 'Password is too weak';
+      } else if (e.code == 'invalid-email') {
+        message = 'Invalid email address';
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
     }
   }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -192,19 +246,43 @@ class _SignUpPageState extends State<SignUpPage> {
                             _buildTextFormField(
                               context,
                               'Enter Your First Name',
+                              controller: _firstNameController,
                               keyboardType: TextInputType.name,
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return "First name is required";
+                                }
+                                return null;
+                              },
                             ),
                             _buildLabel(context, 'Last Name'),
                             _buildTextFormField(
                               context,
                               'Enter Your Last Name',
+                              controller: _lastNameController,
                               keyboardType: TextInputType.name,
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return "Last name is required";
+                                }
+                                return null;
+                              },
                             ),
                             _buildLabel(context, 'Phone Number'),
                             _buildTextFormField(
                               context,
                               'Enter Phone Number',
+                              controller: _phoneNumberController,
                               keyboardType: TextInputType.phone,
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return "Phone number is required";
+                                }
+                                if (value.length != 11) {
+                                  return "Phone number must be 11 digits";
+                                }
+                                return null;
+                              },
                               maxlength: 11,
                             ),
 
@@ -212,6 +290,7 @@ class _SignUpPageState extends State<SignUpPage> {
                             _buildTextFormField(
                               context,
                               'Enter Your Email',
+                              controller: _emailController,
                               keyboardType: TextInputType.emailAddress,
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
@@ -411,7 +490,6 @@ class _SignUpPageState extends State<SignUpPage> {
     Widget? suffixIcon,
     String? Function(String?)? validator,
     int? maxlength,
-
   }) {
     return TextFormField(
       controller: controller,
@@ -419,10 +497,10 @@ class _SignUpPageState extends State<SignUpPage> {
       obscureText: obscureText,
       maxLength: maxlength,
       validator: validator,
-      
+
       style: const TextStyle(fontSize: 14),
       decoration: InputDecoration(
-        counter:Offstage(),
+        counter: Offstage(),
         hintText: hintText,
         hintStyle: const TextStyle(color: Colors.grey),
         suffixIcon: suffixIcon,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sakkeny_app/firebase_options.dart';
+import 'package:sakkeny_app/pages/Saved_List.dart';
 import 'package:sakkeny_app/pages/Startup%20pages/splash_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
@@ -29,7 +30,8 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Saknni App', home:  SplashScreen()
+      title: 'Saknni App', home: 
+       SplashScreen()
       );
   }
 }

@@ -4,6 +4,7 @@ import 'package:sakkeny_app/pages/MessagesPage.dart';
 import 'package:sakkeny_app/pages/My%20Profile/profile.dart';
 import 'package:sakkeny_app/pages/Saved_List.dart';
 import 'package:sakkeny_app/pages/SearchPage.dart';
+// import 'package:sakkeny_app/pages/SearchPage.dart';
 
 class Navigation extends StatefulWidget {
 
@@ -22,9 +23,9 @@ class _navigation extends State<Navigation> {
   }
 
   final List<Widget> _pages = [
-     HomePage(),
-      PropertySearchPage(properties: []),
-   const SavedPage(),
+    HomePage(),
+    PropertySearchPage(properties: []),
+    const SavedPage(),
     const MessagesPage(),
     ProfileScreen(),
   ];
@@ -49,7 +50,7 @@ class _navigation extends State<Navigation> {
         ],
         currentIndex: _selectedIndex,
         // Using the defined primary color for the selected item
-        selectedItemColor: primaryDarkGreen,
+        // selectedItemColor: primaryDarkGreen,
         unselectedItemColor: Colors.grey,
         onTap: _onItemTapped,
         type: BottomNavigationBarType.fixed, // Necessary for 5 items

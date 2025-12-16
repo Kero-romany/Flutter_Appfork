@@ -3,6 +3,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:sakkeny_app/pages/Startup%20pages/Forget_Pass.dart';
 import 'package:sakkeny_app/pages/Startup%20pages/sign_up.dart';
 import 'package:sakkeny_app/pages/bottom_nav.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class SignIn extends StatefulWidget {
   const SignIn({super.key});
@@ -16,6 +17,8 @@ class _SignInState extends State<SignIn> {
   TextEditingController passwordController = TextEditingController();
   GlobalKey<FormState> formState = GlobalKey();
   bool _obscurePassword = true;
+
+  bool _isLoading = false; // NEW for loading indicator
 
   @override
   Widget build(BuildContext context) {
@@ -217,51 +220,35 @@ class _SignInState extends State<SignIn> {
                       ),
                       const SizedBox(height: 15),
 
-                      // Log In button - MODIFIED
+                      // Log In button - WITH FIREBASE AUTH
                       SizedBox(
                         width: double.infinity,
                         height: 55,
                         child: ElevatedButton(
-                          onPressed: () {
-                            if (formState.currentState!.validate()) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text("Login successful!"),
-                                ),
-                              );
-
-                              print(
-                                "${emailController.text} ${passwordController.text}",
-                              );
-
-                              Navigator.of(context).pushReplacement(
-                                MaterialPageRoute(
-                                  builder: (context) => Navigation(),
-                                ),
-                              );
-                            }
-                          },
-
+                          onPressed: _isLoading ? null : _handleLogin,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF276152),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(15),
                             ),
                           ),
-                          child: const Text(
-                            "Log In",
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
+                          child: _isLoading
+                              ? const CircularProgressIndicator(
+                                  color: Colors.white,
+                                )
+                              : const Text(
+                                  "Log In",
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
                         ),
                       ),
 
                       const SizedBox(height: 30),
 
-                      // Divider
                       const Divider(color: Colors.grey, thickness: 1),
                       const SizedBox(height: 10),
 
@@ -283,9 +270,7 @@ class _SignInState extends State<SignIn> {
                               size: 40,
                               color: Colors.black,
                             ),
-                            onPressed: () {
-                              print("Apple login tapped");
-                            },
+                            onPressed: () {},
                           ),
                           const SizedBox(width: 25),
                           IconButton(
@@ -294,9 +279,7 @@ class _SignInState extends State<SignIn> {
                               size: 40,
                               color: Colors.red,
                             ),
-                            onPressed: () {
-                              print("Google login tapped");
-                            },
+                            onPressed: () {},
                           ),
                           const SizedBox(width: 25),
                           IconButton(
@@ -305,16 +288,12 @@ class _SignInState extends State<SignIn> {
                               size: 40,
                               color: Colors.blue,
                             ),
-                            onPressed: () {
-                              print("Facebook login tapped");
-                            },
+                            onPressed: () {},
                           ),
                         ],
                       ),
-
                       const SizedBox(height: 25),
 
-                      // Sign up text
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -350,5 +329,46 @@ class _SignInState extends State<SignIn> {
         ],
       ),
     );
+  }
+
+  // HANDLE FIREBASE LOGIN
+  Future<void> _handleLogin() async {
+    if (!formState.currentState!.validate()) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: emailController.text.trim(),
+        password: passwordController.text.trim(),
+      );
+
+      // SUCCESS — navigate
+      // ignore: use_build_context_synchronously
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => Navigation()),
+      );
+    }
+
+    on FirebaseAuthException catch (e) {
+      String message = 'An error occurred';
+
+      if (e.code == 'user-not-found') message = 'No user found';
+      else if (e.code == 'wrong-password') message = 'Wrong password';
+      else if (e.code == 'invalid-email') message = 'Invalid email';
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), backgroundColor: Colors.red),
+      );
+    }
+
+    finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 }
