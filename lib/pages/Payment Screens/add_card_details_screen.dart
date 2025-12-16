@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'request_to_book_screen.dart';
 
 class AddCardDetailsScreen extends StatefulWidget {
@@ -170,21 +171,38 @@ class _AddCardDetailsScreenState extends State<AddCardDetailsScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: () {
+                      onPressed: () async {
                         if (_formKey.currentState!.validate()) {
-                          // Pass card details to next screen
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => RequestToBookScreen(
-                                cardNumber: _cardNumberController.text,
-                                expiry: _expiryController.text,
-                                cvv: _cvvController.text,
-                                postcode: _postcodeController.text,
-                                country: _selectedCountry,
+                          try {
+                            await FirebaseFirestore.instance.collection('payment').add({
+                              'cardNumber': _cardNumberController.text,
+                              'expiry': _expiryController.text,
+                              'cvv': _cvvController.text,
+                              'postcode': _postcodeController.text,
+                              'country': _selectedCountry,
+                              'timestamp': FieldValue.serverTimestamp(),
+                            });
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Card details saved successfully')),
+                            );
+                            // Pass card details to next screen
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => RequestToBookScreen(
+                                  cardNumber: _cardNumberController.text,
+                                  expiry: _expiryController.text,
+                                  cvv: _cvvController.text,
+                                  postcode: _postcodeController.text,
+                                  country: _selectedCountry,
+                                ),
                               ),
-                            ),
-                          );
+                            );
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Error saving card details: $e')),
+                            );
+                          }
                         }
                       },
                       style: ElevatedButton.styleFrom(
