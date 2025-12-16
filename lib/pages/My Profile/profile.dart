@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sakkeny_app/pages/My%20Profile/MyAccount.dart';
+import 'package:sakkeny_app/pages/My%20Profile/MyListingsPage%20.dart';
 import 'package:sakkeny_app/pages/My%20Profile/Settings.dart';
 import 'package:sakkeny_app/pages/Startup%20pages/sign_in.dart';
 
@@ -55,17 +56,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Expanded(
                 child: ListView(
                   children: [
-                    buildMenuItem(
-                      icon: Icons.person_outline,
-                      text: "My Account",
-                      iconColor:Colors.grey,
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => MyAccountPage()),
-                        );
-                      },
-                    ),
+                          buildMenuItem(
+        icon: Icons.home_work_outlined,
+        text: "My Listings", // ✅ NEW
+        iconColor: Colors.grey,
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const MyListingsPage()),
+          );
+        },
+      ),
+      buildMenuItem(
+        icon: Icons.person_outline,
+        text: "My Account",
+        iconColor: Colors.grey,
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => MyAccountPage()),
+          );
+        },
+      ),
                     buildMenuItem(
                       icon: Icons.notifications_outlined,
                       text: "Notifications",
@@ -120,6 +132,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ),
       ),
+      
     );
   }
 

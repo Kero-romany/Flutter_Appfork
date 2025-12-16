@@ -1,52 +1,77 @@
 import 'package:flutter/material.dart';
 import 'package:sakkeny_app/pages/MessagesPage.dart';
 import 'package:sakkeny_app/pages/Payment%20Screens/review_and_continue_screen.dart';
+import 'package:sakkeny_app/models/cards.dart';
+import 'package:sakkeny_app/services/property_service.dart';
 
 class PropertyDetailsPage extends StatefulWidget {
-  final String price;
-  final String title;
-  final String location;
-  final String image;
-  final String description;
-  final bool isWifi;
-  final int Livingroom;
-  final int bedroom;
-  final int bathroom;
-  final int balcony;
-  final int kitchen;
-  final double rating;
-  final int reviews;
+  final PropertyModel property;
 
-  const PropertyDetailsPage({
-    Key? key,
-    required this.price,
-    required this.title,
-    required this.location,
-    required this.image,
-    required this.description,
-    required this.isWifi,
-    required this.Livingroom,
-    required this.bedroom,
-    required this.bathroom,
-    required this.balcony,
-    required this.kitchen,
-    required this.rating,
-    required this.reviews,
-  }) : super(key: key);
+  const PropertyDetailsPage({super.key, required this.property});
 
   @override
   State<PropertyDetailsPage> createState() => _PropertyDetailsPageState();
 }
 
-
 class _PropertyDetailsPageState extends State<PropertyDetailsPage> {
-  bool _isFavorite = false; 
+  bool isFavorite = false;
+  bool _isCheckingFavorite = true;
+  final PropertyService _propertyService = PropertyService();
 
   @override
   void initState() {
     super.initState();
+    _checkIfSaved();
   }
-  
+
+  // ✅ Check if property is already saved
+  Future<void> _checkIfSaved() async {
+    bool saved = await _propertyService.isPropertySaved(widget.property.propertyId);
+    if (mounted) {
+      setState(() {
+        isFavorite = saved;
+        _isCheckingFavorite = false;
+      });
+    }
+  }
+
+  // ✅ Toggle save/unsave
+  Future<void> _toggleSave() async {
+    setState(() => _isCheckingFavorite = true);
+    
+    bool success = await _propertyService.toggleSavedProperty(widget.property.propertyId);
+    
+    if (success && mounted) {
+      setState(() {
+        isFavorite = !isFavorite;
+        _isCheckingFavorite = false;
+      });
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(isFavorite ? '❤️ Added to favorites' : '💔 Removed from favorites'),
+          duration: const Duration(seconds: 2),
+          backgroundColor: isFavorite ? Colors.green : Colors.grey[700],
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+    } else {
+      setState(() => _isCheckingFavorite = false);
+      
+      // Show error message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('⚠️ Failed to update favorites'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,82 +80,92 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> {
       body: SafeArea(
         child: Column(
           children: [
-            // App Bar
             _buildAppBar(context),
-            
-            // Scrollable Content
             Expanded(
               child: SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Property Image with Price Badge
-                    _buildPropertyImage(),
-                    
-                    // Property Title and Rating
-                    _buildPropertyHeader(),
-                    
-                    // Description Section
-                    _buildDescription(),
-                    
-                    // Amenities Section
-                    _buildAmenities(),
-                    
+                    _buildPropertyImage(widget.property),
+                    BuildPropertyHeader(
+                      property: widget.property,
+                      isFavorite: isFavorite,
+                      isLoading: _isCheckingFavorite,
+                      onFavoriteToggle: _toggleSave,
+                    ),
+                    _buildDescription(widget.property),
+                    _buildAmenities(widget.property),
                     const SizedBox(height: 20),
                   ],
                 ),
               ),
             ),
-            
-            // Bottom Buttons
-            _buildBottomButtons(),
+            _buildBottomButtons(context),
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _buildAppBar(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          IconButton(
-            onPressed: () => Navigator.pop(context), 
-            icon: const Icon(Icons.arrow_back),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-          ),
-          const Text(
-            'Property Details',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.share_outlined),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-          ),
-        ],
-      ),
-    );
-  }
+// ============================================
+// APP BAR
+// ============================================
+Widget _buildAppBar(BuildContext context) {
+  return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        IconButton(
+          onPressed: () => Navigator.pop(context),
+          icon: const Icon(Icons.arrow_back),
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
+        ),
+        const Text(
+          'Property Details',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        IconButton(
+          onPressed: () {
+            // TODO: Implement share functionality
+          },
+          icon: const Icon(Icons.share_outlined),
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
+        ),
+      ],
+    ),
+  );
+}
 
-  Widget _buildPropertyImage() {
-    
+// ============================================
+// PROPERTY IMAGE CAROUSEL
+// ============================================
+class _PropertyImageCarousel extends StatefulWidget {
+  final PropertyModel property;
+
+  const _PropertyImageCarousel({required this.property});
+
+  @override
+  State<_PropertyImageCarousel> createState() => _PropertyImageCarouselState();
+}
+
+class _PropertyImageCarouselState extends State<_PropertyImageCarousel> {
+  int _currentPage = 0;
+
+  @override
+  Widget build(BuildContext context) {
     return Stack(
       children: [
         Container(
           height: 280,
           margin: const EdgeInsets.all(16),
           child: PageView.builder(
-            itemCount: 3,
+            itemCount: widget.property.images.length,
             onPageChanged: (index) {
-              // You can add a setState here to update current page indicator
+              setState(() => _currentPage = index);
             },
             itemBuilder: (context, index) {
               return Container(
@@ -141,13 +176,37 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> {
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(20),
-                  // استخدام Image.asset
-                  child: Image.asset(widget.image, fit: BoxFit.cover)
+                  child: Image.network(
+                    widget.property.images[index],
+                    fit: BoxFit.cover,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Center(
+                        child: CircularProgressIndicator(
+                          value: loadingProgress.expectedTotalBytes != null
+                              ? loadingProgress.cumulativeBytesLoaded /
+                                  loadingProgress.expectedTotalBytes!
+                              : null,
+                          color: const Color(0xFF276152),
+                        ),
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        color: Colors.grey[300],
+                        child: const Center(
+                          child: Icon(Icons.broken_image, size: 50, color: Colors.grey),
+                        ),
+                      );
+                    },
+                  ),
                 ),
               );
             },
           ),
         ),
+        
+        // Price Badge
         Positioned(
           top: 26,
           right: 26,
@@ -158,7 +217,7 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> {
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
-              'EGP ${widget.price}/Month',    
+              'EGP ${widget.property.price.toStringAsFixed(0)}/Month',
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 12,
@@ -167,31 +226,59 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> {
             ),
           ),
         ),
-        Positioned(
-          bottom: 26,
-          left: 0,
-          right: 0,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(
-              3,
-              (index) => Container(
-                width: index == 0 ? 24 : 6,
-                height: 6,
-                margin: const EdgeInsets.symmetric(horizontal: 2),
-                decoration: BoxDecoration(
-                  color: index == 0 ? Colors.white : Colors.white.withOpacity(0.5),
-                  borderRadius: BorderRadius.circular(3),
+        
+        // Page Indicators
+        if (widget.property.images.length > 1)
+          Positioned(
+            bottom: 26,
+            left: 0,
+            right: 0,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(
+                widget.property.images.length,
+                (index) => Container(
+                  width: index == _currentPage ? 24 : 6,
+                  height: 6,
+                  margin: const EdgeInsets.symmetric(horizontal: 2),
+                  decoration: BoxDecoration(
+                    color: index == _currentPage
+                        ? Colors.white
+                        : Colors.white.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
                 ),
               ),
             ),
           ),
-        ),
       ],
     );
   }
+}
 
-  Widget _buildPropertyHeader() {
+Widget _buildPropertyImage(PropertyModel property) {
+  return _PropertyImageCarousel(property: property);
+}
+
+// ============================================
+// PROPERTY HEADER (Title, Location, Rating, Favorite)
+// ============================================
+class BuildPropertyHeader extends StatelessWidget {
+  final PropertyModel property;
+  final bool isFavorite;
+  final bool isLoading;
+  final VoidCallback onFavoriteToggle;
+
+  const BuildPropertyHeader({
+    super.key,
+    required this.property,
+    required this.isFavorite,
+    required this.isLoading,
+    required this.onFavoriteToggle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
@@ -200,22 +287,38 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                widget.title,
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
+              Expanded(
+                child: Text(
+                  property.title,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
-              IconButton( 
-                icon: Icon(
-                  _isFavorite ? Icons.favorite : Icons.favorite_border,
-                  color: _isFavorite ? const Color(0xFF276152) : Colors.grey,
-                  size: 30,
-                ),
-                onPressed: () => setState(() {
-                  _isFavorite = !_isFavorite;
-                }),
+              IconButton(
+                icon: isLoading
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Color(0xFF276152),
+                        ),
+                      )
+                    : AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 300),
+                        transitionBuilder: (child, animation) {
+                          return ScaleTransition(scale: animation, child: child);
+                        },
+                        child: Icon(
+                          isFavorite ? Icons.favorite : Icons.favorite_border,
+                          key: ValueKey(isFavorite),
+                          color: isFavorite ? Colors.red : Colors.grey,
+                          size: 30,
+                        ),
+                      ),
+                onPressed: isLoading ? null : onFavoriteToggle,
               ),
             ],
           ),
@@ -224,11 +327,10 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> {
             children: [
               Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
               const SizedBox(width: 4),
-              Text(
-                widget.location,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[600],
+              Expanded(
+                child: Text(
+                  property.location.fullAddress,
+                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                 ),
               ),
             ],
@@ -239,7 +341,7 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> {
               const Icon(Icons.star, color: Colors.amber, size: 18),
               const SizedBox(width: 4),
               Text(
-                '${widget.rating}',
+                '${property.rating}',
                 style: const TextStyle(
                   fontWeight: FontWeight.w600,
                   fontSize: 14,
@@ -247,11 +349,8 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> {
               ),
               const SizedBox(width: 4),
               Text(
-                '(${widget.reviews} reviews)',
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: 14,
-                ),
+                '(${property.reviews} reviews)',
+                style: TextStyle(color: Colors.grey[600], fontSize: 14),
               ),
             ],
           ),
@@ -259,172 +358,192 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> {
       ),
     );
   }
+}
 
-  Widget _buildDescription() {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Descriptions',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            widget.description,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[700],
-              height: 1.5,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+// ============================================
+// DESCRIPTION SECTION
+// ============================================
+Widget _buildDescription(PropertyModel property) {
+  return Padding(
+    padding: const EdgeInsets.all(16),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Description',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          property.description,
+          style: TextStyle(fontSize: 14, color: Colors.grey[700], height: 1.5),
+        ),
+      ],
+    ),
+  );
+}
 
-  Widget _buildAmenities() {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'What this place offers',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+// ============================================
+// AMENITIES SECTION
+// ============================================
+Widget _buildAmenities(PropertyModel property) {
+  return Padding(
+    padding: const EdgeInsets.all(16),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'What this place offers',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: _buildAmenityItem(
+                property.isWifi ? Icons.wifi : Icons.wifi_off,
+                'Wifi',
+                property.isWifi ? Colors.green[100]! : Colors.red[100]!,
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _buildAmenityItem(widget.isWifi ? Icons.wifi:Icons.wifi_off, 'Wifi', widget.isWifi ? Colors.green[100]! : Colors.red[100]!),
+            Expanded(
+              child: _buildAmenityItem(
+                Icons.weekend_outlined,
+                '${property.livingrooms}\nLivingroom',
               ),
-              Expanded(
-                child: _buildAmenityItem(Icons.weekend_outlined , '${widget.Livingroom} \n livingroom'),
+            ),
+            Expanded(
+              child: _buildAmenityItem(
+                Icons.bathroom_outlined,
+                '${property.bathrooms}\nBathroom',
               ),
-              Expanded(
-                child: _buildAmenityItem(Icons.bathroom_outlined, '${widget.bathroom} \n Bathroom'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _buildAmenityItem(
+                Icons.bed_outlined,
+                '${property.bedrooms}\nBedroom',
               ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _buildAmenityItem(Icons.bed_outlined, '${widget.bedroom} \n bedroom'),
+            ),
+            Expanded(
+              child: _buildAmenityItem(
+                Icons.kitchen_outlined,
+                '${property.kitchens}\nKitchen',
               ),
-              Expanded(
-                child: _buildAmenityItem(Icons.kitchen_outlined, '${widget.kitchen} \n kitchen'),
+            ),
+            Expanded(
+              child: _buildAmenityItem(
+                Icons.balcony_outlined,
+                '${property.balconies}\nBalcony',
               ),
-              Expanded(
-                child: _buildAmenityItem(Icons.balcony_outlined, '${widget.balcony} \n balcony'),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
+}
 
-  Widget _buildAmenityItem(IconData icon, String label, [Color color = Colors.white]) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      margin: const EdgeInsets.symmetric(horizontal: 4),
-      decoration: BoxDecoration(
-        color: color,
-        border: Border.all(color: Colors.grey[300]!),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, size: 20, color: Colors.grey[700]),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[800],
-              ),
-            ),
+Widget _buildAmenityItem(
+  IconData icon,
+  String label, [
+  Color color = Colors.white,
+]) {
+  return Container(
+    padding: const EdgeInsets.all(12),
+    margin: const EdgeInsets.symmetric(horizontal: 4),
+    decoration: BoxDecoration(
+      color: color,
+      border: Border.all(color: Colors.grey[300]!),
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: Row(
+      children: [
+        Icon(icon, size: 20, color: Colors.grey[700]),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 12, color: Colors.grey[800]),
           ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
+}
 
-  Widget _buildBottomButtons() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.2),
-            spreadRadius: 1,
-            blurRadius: 10,
-            offset: const Offset(0, -3),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: ElevatedButton(
-              onPressed: () {Navigator.of(
-                context,
-              ).push(MaterialPageRoute(builder: (context) => const MessagesPage()));},
-              style: ElevatedButton.styleFrom(
-                backgroundColor:const Color(0xFF276152),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 0,
+// ============================================
+// BOTTOM BUTTONS (Message & Book Now)
+// ============================================
+Widget _buildBottomButtons(BuildContext context) {
+  return Container(
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      boxShadow: [
+        BoxShadow(
+          color: Colors.grey.withOpacity(0.2),
+          spreadRadius: 1,
+          blurRadius: 10,
+          offset: const Offset(0, -3),
+        ),
+      ],
+    ),
+    child: Row(
+      children: [
+        Expanded(
+          child: ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (context) => const MessagesPage()),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF276152),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
-              child: const Text(
-                'Message',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              elevation: 0,
+            ),
+            child: const Text(
+              'Message',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: ElevatedButton(
-              onPressed: () {Navigator.of(
-                context,
-              ).push(MaterialPageRoute(builder: (context) => const ReviewAndContinueScreen()));},
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF276152),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const ReviewAndContinueScreen(),
                 ),
-                elevation: 0,
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF276152),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
-              child: const Text(
-                'Book Now',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              elevation: 0,
+            ),
+            child: const Text(
+              'Book Now',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
           ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
 }
