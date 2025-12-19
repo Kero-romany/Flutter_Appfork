@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:sakkeny_app/services/property_service.dart';
 
 class PropertyCard extends StatefulWidget {
@@ -33,7 +34,8 @@ class _PropertyCardState extends State<PropertyCard> {
   }
 
   Future<void> _checkIfSaved() async {
-    bool saved = await _propertyService.isPropertySaved(widget.propertyId);
+    bool saved =
+        await _propertyService.isPropertySaved(widget.propertyId);
     if (mounted) {
       setState(() {
         _isSaved = saved;
@@ -45,7 +47,8 @@ class _PropertyCardState extends State<PropertyCard> {
   Future<void> _toggleSave() async {
     setState(() => _isLoading = true);
 
-    bool success = await _propertyService.toggleSavedProperty(widget.propertyId);
+    bool success = await _propertyService
+        .toggleSavedProperty(widget.propertyId);
 
     if (success && mounted) {
       setState(() {
@@ -55,13 +58,18 @@ class _PropertyCardState extends State<PropertyCard> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(_isSaved ? '❤️ Added to favorites' : '💔 Removed from favorites'),
+          content: Text(
+            _isSaved
+                ? '❤️ Added to favorites'
+                : '💔 Removed from favorites',
+          ),
           duration: const Duration(seconds: 1),
-          backgroundColor: _isSaved ? Colors.green : Colors.grey,
+          backgroundColor:
+              _isSaved ? Colors.green : Colors.grey,
         ),
       );
     } else {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -82,35 +90,39 @@ class _PropertyCardState extends State<PropertyCard> {
         borderRadius: BorderRadius.circular(16),
         child: Stack(
           children: [
-            // Background Image
+            // ================= BACKGROUND IMAGE (CACHED) =================
             Positioned.fill(
-              child: Image.network(
-                widget.imagePath,
+              child: CachedNetworkImage(
+                imageUrl: widget.imagePath,
                 fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    color: Colors.grey[300],
-                    child: const Center(
-                      child: Icon(Icons.broken_image, size: 40, color: Colors.grey),
+                memCacheWidth: 700,
+                memCacheHeight: 500,
+
+                placeholder: (context, url) => Container(
+                  color: Colors.grey[300],
+                  child: const Center(
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Color(0xFF276152),
                     ),
-                  );
-                },
-                loadingBuilder: (context, child, loadingProgress) {
-                  if (loadingProgress == null) return child;
-                  return Container(
-                    color: Colors.grey[300],
-                    child: const Center(
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Color(0xFF276152),
-                      ),
+                  ),
+                ),
+
+                errorWidget: (context, url, error) =>
+                    Container(
+                  color: Colors.grey[300],
+                  child: const Center(
+                    child: Icon(
+                      Icons.broken_image,
+                      size: 40,
+                      color: Colors.grey,
                     ),
-                  );
-                },
+                  ),
+                ),
               ),
             ),
 
-            // Gradient Overlay
+            // ================= GRADIENT OVERLAY =================
             Positioned.fill(
               child: Container(
                 decoration: BoxDecoration(
@@ -127,52 +139,66 @@ class _PropertyCardState extends State<PropertyCard> {
               ),
             ),
 
-            // Content
+            // ================= CONTENT =================
             Padding(
               padding: const EdgeInsets.all(12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Top Row: Heart Button & Price
+                  // ---------- TOP ROW ----------
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment:
+                        MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment:
+                        CrossAxisAlignment.start,
                     children: [
-                      // Heart Button
+                      // ❤️ Favorite Button
                       GestureDetector(
-                        onTap: _isLoading ? null : _toggleSave,
+                        onTap:
+                            _isLoading ? null : _toggleSave,
                         child: Container(
-                          padding: const EdgeInsets.all(8),
+                          padding:
+                              const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.5),
+                            color: Colors.black
+                                .withOpacity(0.5),
                             shape: BoxShape.circle,
                           ),
                           child: _isLoading
                               ? const SizedBox(
                                   width: 16,
                                   height: 16,
-                                  child: CircularProgressIndicator(
+                                  child:
+                                      CircularProgressIndicator(
                                     strokeWidth: 2,
                                     color: Colors.white,
                                   ),
                                 )
                               : Icon(
-                                  _isSaved ? Icons.favorite : Icons.favorite_border,
-                                  color: _isSaved ? Colors.red : Colors.white,
+                                  _isSaved
+                                      ? Icons.favorite
+                                      : Icons
+                                          .favorite_border,
+                                  color: _isSaved
+                                      ? Colors.red
+                                      : Colors.white,
                                   size: 18,
                                 ),
                         ),
                       ),
 
-                      // Price Badge
+                      // 💰 Price Badge
                       Container(
-                        padding: const EdgeInsets.symmetric(
+                        padding:
+                            const EdgeInsets.symmetric(
                           horizontal: 8,
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.6),
-                          borderRadius: BorderRadius.circular(12),
+                          color: Colors.black
+                              .withOpacity(0.6),
+                          borderRadius:
+                              BorderRadius.circular(12),
                         ),
                         child: Text(
                           widget.price,
@@ -182,7 +208,8 @@ class _PropertyCardState extends State<PropertyCard> {
                             fontWeight: FontWeight.bold,
                           ),
                           maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                          overflow:
+                              TextOverflow.ellipsis,
                         ),
                       ),
                     ],
@@ -190,10 +217,10 @@ class _PropertyCardState extends State<PropertyCard> {
 
                   const Spacer(),
 
-                  // Bottom Info
+                  // ---------- BOTTOM INFO ----------
                   Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment:
+                        CrossAxisAlignment.start,
                     children: [
                       Text(
                         widget.title,
@@ -203,7 +230,8 @@ class _PropertyCardState extends State<PropertyCard> {
                           fontWeight: FontWeight.bold,
                         ),
                         maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                        overflow:
+                            TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 4),
                       Row(
@@ -222,7 +250,8 @@ class _PropertyCardState extends State<PropertyCard> {
                                 fontSize: 11,
                               ),
                               maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                              overflow: TextOverflow
+                                  .ellipsis,
                             ),
                           ),
                         ],

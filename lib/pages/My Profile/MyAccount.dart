@@ -1,88 +1,77 @@
 import 'package:flutter/material.dart';
-import 'dart:convert';
-import 'package:crypto/crypto.dart'; // Added for SHA256 hashing
-
-void main() {
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Rental App',
-      theme: ThemeData(
-        primaryColor: const Color(0xFF276152),
-        scaffoldBackgroundColor: Colors.white,
-        colorScheme: const ColorScheme.light(
-          primary: Color(0xFF276152),
-          secondary: Color(0xFF276152),
-          onPrimary: Colors.white,
-          onSecondary: Colors.white,
-        ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF276152),
-            foregroundColor: Colors.white,
-          ),
-        ),
-      ),
-      home: const MyAccountPage(),
-      debugShowCheckedModeBanner: false,
-    );
-  }
-}
-
-class UserData {
-  String username;
-  String email;
-  String phoneNumber;
-  String password;
-
-  UserData({
-    required this.username,
-    required this.email,
-    required this.phoneNumber,
-    required this.password,
-  });
-}
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class MyAccountPage extends StatefulWidget {
-  final UserData? userData;
-
-  const MyAccountPage({Key? key, this.userData}) : super(key: key);
+  const MyAccountPage({Key? key}) : super(key: key);
 
   @override
   State<MyAccountPage> createState() => _MyAccountPageState();
 }
 
 class _MyAccountPageState extends State<MyAccountPage> {
-  late String username;
-  late String email;
-  late String phoneNumber;
-  late String hashedPassword;
-  bool showPassword = false;
-  
-  
+  String firstName = '';
+  String lastName = '';
+  String email = '';
+  String phoneNumber = '';
+  bool isLoading = true;
+
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   @override
   void initState() {
     super.initState();
-    username = widget.userData?.username ?? 'Gracia Tya';
-    email = widget.userData?.email ?? 'gracia.tya@email.com';
-    phoneNumber = widget.userData?.phoneNumber ?? '+1 234 567 8900';
-    hashedPassword = _hashPassword(widget.userData?.password ?? 'password123');
+    _loadUserData();
   }
 
-  static String _hashPassword(String password) {
-    var bytes = utf8.encode(password);
-    var digest = sha256.convert(bytes);
-    return digest.toString();
+  Future<void> _loadUserData() async {
+    try {
+      User? user = _auth.currentUser;
+      if (user != null) {
+        DocumentSnapshot userData = await _firestore
+            .collection('users')
+            .doc(user.uid)
+            .get();
+
+        if (userData.exists) {
+          setState(() {
+            firstName = userData['first name'] ?? '';
+            lastName = userData['last name'] ?? '';
+            email = userData['email'] ?? '';
+            phoneNumber = userData['phone number'] ?? '';
+            isLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      print('Error loading user data: $e');
+      setState(() => isLoading = false);
+    }
   }
 
-  void _editField(String fieldName, String currentValue, Function(String) onSave) {
+  Future<void> _updateUserData(String field, String value) async {
+    try {
+      User? user = _auth.currentUser;
+      if (user != null) {
+        // Update Firestore
+        await _firestore.collection('users').doc(user.uid).update({
+          field: value,
+          'updatedAt': Timestamp.now(),
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Updated successfully')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error updating: $e')),
+      );
+    }
+  }
+
+  void _editField(String fieldName, String currentValue, String firestoreField) {
     final TextEditingController controller = TextEditingController(text: currentValue);
     showDialog<void>(
       context: context,
@@ -108,8 +97,14 @@ class _MyAccountPageState extends State<MyAccountPage> {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
-              onSave(controller.text);
+            onPressed: () async {
+              await _updateUserData(firestoreField, controller.text);
+              setState(() {
+                if (firestoreField == 'first name') firstName = controller.text;
+                if (firestoreField == 'last name') lastName = controller.text;
+                if (firestoreField == 'email') email = controller.text;
+                if (firestoreField == 'phone number') phoneNumber = controller.text;
+              });
               Navigator.pop(context);
             },
             style: ElevatedButton.styleFrom(
@@ -127,20 +122,22 @@ class _MyAccountPageState extends State<MyAccountPage> {
     Navigator.push<void>(
       context,
       MaterialPageRoute<void>(
-        builder: (BuildContext context) => ChangePasswordPage(
-          currentHashedPassword: hashedPassword,
-          onPasswordChanged: (String newPassword) {
-            setState(() {
-              hashedPassword = _hashPassword(newPassword);
-            });
-          },
-        ),
+        builder: (BuildContext context) => ChangePasswordPage(),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Scaffold(
+        backgroundColor: Color(0xFF276152),
+        body: Center(
+          child: CircularProgressIndicator(color: Colors.white),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFF276152),
       body: SafeArea(
@@ -172,29 +169,30 @@ class _MyAccountPageState extends State<MyAccountPage> {
                     const SizedBox(height: 20),
                     _buildAccountItem(
                       icon: Icons.person_outline,
-                      title: 'Username',
-                      value: username,
-                      onTap: () => _editField('Username', username, (String value) {
-                        setState(() => username = value);
-                      }),
+                      title: 'First Name',
+                      value: firstName,
+                      onTap: () => _editField('First Name', firstName, 'first name'),
+                    ),
+                    const SizedBox(height: 15),
+                    _buildAccountItem(
+                      icon: Icons.person_outline,
+                      title: 'Last Name',
+                      value: lastName,
+                      onTap: () => _editField('Last Name', lastName, 'last name'),
                     ),
                     const SizedBox(height: 15),
                     _buildAccountItem(
                       icon: Icons.email_outlined,
                       title: 'Email',
                       value: email,
-                      onTap: () => _editField('Email', email, (String value) {
-                        setState(() => email = value);
-                      }),
+                      onTap: () => _editField('Email', email, 'email'),
                     ),
                     const SizedBox(height: 15),
                     _buildAccountItem(
                       icon: Icons.phone_outlined,
                       title: 'Phone Number',
                       value: phoneNumber,
-                      onTap: () => _editField('Phone Number', phoneNumber, (String value) {
-                        setState(() => phoneNumber = value);
-                      }),
+                      onTap: () => _editField('Phone Number', phoneNumber, 'phone number'),
                     ),
                     const SizedBox(height: 15),
                     _buildPasswordItem(),
@@ -268,7 +266,7 @@ class _MyAccountPageState extends State<MyAccountPage> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    value.isEmpty ? 'Tap to change' : value,
+                    value.isEmpty ? 'Tap to add' : value,
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
@@ -330,27 +328,15 @@ class _MyAccountPageState extends State<MyAccountPage> {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  showPassword ? hashedPassword : '••••••••',
-                  style: const TextStyle(
+                const Text(
+                  '••••••••',
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
                   ),
-                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
-          ),
-          IconButton(
-            icon: Icon(
-              showPassword ? Icons.visibility_off : Icons.visibility,
-              color: Colors.grey[400],
-            ),
-            onPressed: () {
-              setState(() {
-                showPassword = !showPassword;
-              });
-            },
           ),
         ],
       ),
@@ -359,14 +345,7 @@ class _MyAccountPageState extends State<MyAccountPage> {
 }
 
 class ChangePasswordPage extends StatefulWidget {
-  final String currentHashedPassword;
-  final ValueChanged<String> onPasswordChanged;
-
-  const ChangePasswordPage({
-    super.key,
-    required this.currentHashedPassword,
-    required this.onPasswordChanged,
-  });
+  const ChangePasswordPage({super.key});
 
   @override
   State<ChangePasswordPage> createState() => _ChangePasswordPageState();
@@ -384,16 +363,10 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
   String? _currentPasswordError;
   String? _newPasswordError;
   String? _confirmNewPasswordError;
-  
 
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  static String _hashPassword(String password) {
-    var bytes = utf8.encode(password);
-    var digest = sha256.convert(bytes);
-    return digest.toString();
-  }
-
-  void _validateAndChangePassword() {
+  Future<void> _validateAndChangePassword() async {
     setState(() {
       _currentPasswordError = null;
       _newPasswordError = null;
@@ -402,12 +375,9 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
 
     bool isValid = true;
 
-    // Validate current password
+    // Validate current password (Firebase will check this)
     if (_currentPasswordController.text.isEmpty) {
       setState(() => _currentPasswordError = 'Current password cannot be empty');
-      isValid = false;
-    } else if (_hashPassword(_currentPasswordController.text) != widget.currentHashedPassword) {
-      setState(() => _currentPasswordError = 'Incorrect current password');
       isValid = false;
     }
 
@@ -430,8 +400,39 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
     }
 
     if (isValid) {
-      widget.onPasswordChanged(_newPasswordController.text);
-      Navigator.pop(context);
+      try {
+        User? user = _auth.currentUser;
+        if (user != null && user.email != null) {
+          // Re-authenticate user with current password
+          AuthCredential credential = EmailAuthProvider.credential(
+            email: user.email!,
+            password: _currentPasswordController.text,
+          );
+
+          await user.reauthenticateWithCredential(credential);
+
+          // Update password
+          await user.updatePassword(_newPasswordController.text);
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Password changed successfully')),
+          );
+
+          Navigator.pop(context);
+        }
+      } on FirebaseAuthException catch (e) {
+        String message = 'Error changing password';
+        
+        if (e.code == 'wrong-password') {
+          setState(() => _currentPasswordError = 'Incorrect current password');
+        } else if (e.code == 'weak-password') {
+          setState(() => _newPasswordError = 'Password is too weak');
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(message)),
+          );
+        }
+      }
     }
   }
 
@@ -564,4 +565,3 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
     );
   }
 }
-

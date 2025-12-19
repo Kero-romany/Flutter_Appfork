@@ -31,38 +31,24 @@ class _AddApartmentPageState extends State<AddApartmentPage> {
   List<XFile> selectedImages = [];
 
   final List<String> amenities = [
-    "Air Conditioner",
-    "In-unit Laundry",
-    "Nearby Gym",
-    "Elevator",
-    "Doorman",
-    "Nearby Garage",
-    "Dishwasher",
-    "Hardwood Floors",
-    "Clothing Storage",
+    "Air Conditioning",
     "Wifi",
-    "Kitchen",
-    "Refrigerator",
-    "Microwave",
-    "Stove",
+    "Closet",
+    "Iron",
+    "TV",
+    "Dedicated Workspace",
   ];
 
-  final List<String> propertyTypes = [
-    "Apartment",
-    "Villa",
-    "Studio",
-    "Penthouse",
-    "Duplex",
-  ];
+
 
   Map<String, bool> selectedAmenities = {};
 
-  String selectedPropertyType = "Apartment";
   int bedrooms = 1;
   int bathrooms = 1;
-  int livingrooms = 1;
-  int kitchens = 1;
-  int balconies = 0;
+  int kitchens = 1;     // ✅ VISIBLE INPUT
+  int balconies = 0;    // ✅ VISIBLE INPUT
+
+  bool _isUploading = false;
 
   @override
   void initState() {
@@ -70,6 +56,16 @@ class _AddApartmentPageState extends State<AddApartmentPage> {
     for (var item in amenities) {
       selectedAmenities[item] = false;
     }
+  }
+
+  @override
+  void dispose() {
+    descriptionController.dispose();
+    rentController.dispose();
+    titleController.dispose();
+    cityController.dispose();
+    areaController.dispose();
+    super.dispose();
   }
 
   /* ---------------- Image Picker ---------------- */
@@ -85,7 +81,7 @@ class _AddApartmentPageState extends State<AddApartmentPage> {
   /* ---------------- Upload Images to Supabase ---------------- */
   Future<List<String>> uploadImagesToSupabase() async {
     List<String> imageUrls = [];
-    final uuid = Uuid();
+    final uuid = const Uuid();
 
     for (final image in selectedImages) {
       final fileName =
@@ -113,11 +109,48 @@ class _AddApartmentPageState extends State<AddApartmentPage> {
 
   /* ---------------- Publish Apartment ---------------- */
   Future<void> publishApartment() async {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const Center(child: CircularProgressIndicator()),
-    );
+    // ✅ Validation
+    if (selectedImages.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('⚠️ Please add at least one image'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    if (titleController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('⚠️ Please enter a title'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    if (cityController.text.trim().isEmpty || areaController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('⚠️ Please enter city and area'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    if (rentController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('⚠️ Please enter monthly rent'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isUploading = true);
 
     try {
       final uploadedImageUrls = await uploadImagesToSupabase();
@@ -128,51 +161,49 @@ class _AddApartmentPageState extends State<AddApartmentPage> {
           .toList();
 
       bool success = await _propertyService.addProperty(
-        title: titleController.text.isEmpty
-            ? 'Modern Apartment'
-            : titleController.text,
-        description: descriptionController.text,
+        title: titleController.text.trim(),
+        description: descriptionController.text.trim(),
         price: double.tryParse(rentController.text) ?? 0,
         location: PropertyLocation(
-          city: cityController.text.isEmpty ? 'Cairo' : cityController.text,
-          area: areaController.text.isEmpty ? 'Nasr City' : areaController.text,
-          fullAddress:
-              '${cityController.text.isEmpty ? 'Cairo' : cityController.text}, '
-              '${areaController.text.isEmpty ? 'Nasr City' : areaController.text}, Egypt',
+          city: cityController.text.trim(),
+          area: areaController.text.trim(),
+          fullAddress: '${cityController.text.trim()}, ${areaController.text.trim()}, Egypt',
         ),
-        propertyType: selectedPropertyType,
         bedrooms: bedrooms,
         bathrooms: bathrooms,
-        livingrooms: livingrooms,
-        kitchens: kitchens,
-        balconies: balconies,
+        kitchens: kitchens,       // ✅ SENT TO SERVICE
+        balconies: balconies,     // ✅ SENT TO SERVICE
         amenities: selectedAmenitiesList,
-        imageUrls: uploadedImageUrls, // ✅ SUPABASE URLS
+        imageUrls: uploadedImageUrls,
       );
 
-      if (mounted) Navigator.pop(context);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            success
-                ? '✅ Property published successfully!'
-                : '❌ Failed to publish property',
+      if (mounted) {
+        setState(() => _isUploading = false);
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              success
+                  ? '✅ Property published successfully!'
+                  : '❌ Failed to publish property',
+            ),
+            backgroundColor: success ? Colors.green : Colors.red,
           ),
-          backgroundColor: success ? Colors.green : Colors.red,
-        ),
-      );
+        );
 
-      if (success && mounted) Navigator.pop(context, true);
+        if (success) Navigator.pop(context, true);
+      }
     } catch (e) {
-      if (mounted) Navigator.pop(context);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('❌ Upload failed: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        setState(() => _isUploading = false);
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Upload failed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -203,7 +234,7 @@ class _AddApartmentPageState extends State<AddApartmentPage> {
     }
   }
 
-  /* ---------------- UI (UNCHANGED) ---------------- */
+  /* ---------------- UI ---------------- */
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -216,168 +247,173 @@ class _AddApartmentPageState extends State<AddApartmentPage> {
           style: TextStyle(fontWeight: FontWeight.w600),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildImagePickerSection(),
-            const SizedBox(height: 20),
+      body: _isUploading
+          ? const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(color: Color(0xFF276152)),
+                  SizedBox(height: 16),
+                  Text('Uploading property...', style: TextStyle(fontSize: 16)),
+                ],
+              ),
+            )
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildImagePickerSection(),
+                  const SizedBox(height: 20),
 
-            const Text(
-              "Title",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 6),
-            _buildTextBox(
-              titleController,
-              "e.g. Modern Apartment in Nasr City",
-              maxLines: 1,
-            ),
+                  // Title
+                  const Text(
+                    "Title",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 6),
+                  _buildTextBox(
+                    titleController,
+                    "e.g. Modern Apartment in Nasr City",
+                    maxLines: 1,
+                  ),
 
-            const SizedBox(height: 20),
+                  const SizedBox(height: 20),
 
-            const Text(
-              "Description",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 6),
-            _buildTextBox(
-              descriptionController,
-              "Describe your apartment...",
-              maxLines: 5,
-            ),
+                  // Description
+                  const Text(
+                    "Description",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 6),
+                  _buildTextBox(
+                    descriptionController,
+                    "Describe your apartment...",
+                    maxLines: 5,
+                  ),
 
-            const SizedBox(height: 20),
+                  const SizedBox(height: 20),
 
-            const Text(
-              "Location",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 6),
-            _buildLocationSection(),
+                  // Location
+                  const Text(
+                    "Location",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 6),
+                  _buildLocationSection(),
 
-            const SizedBox(height: 20),
+                  const SizedBox(height: 20),
 
-            _buildInputWithLabel(
-              "Property Type",
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade300),
-                ),
-                child: DropdownButton<String>(
-                  value: selectedPropertyType,
-                  isExpanded: true,
-                  underline: const SizedBox(),
-                  items: propertyTypes
-                      .map(
-                        (type) =>
-                            DropdownMenuItem(value: type, child: Text(type)),
-                      )
-                      .toList(),
-                  onChanged: (v) {
-                    setState(() => selectedPropertyType = v!);
-                  },
-                ),
+                  // Rent
+                  const SizedBox(height: 20),
+                  _buildInputWithLabel(
+                    "Monthly Rent (EGP)",
+                    TextField(
+                      controller: rentController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        fillColor: Colors.white,
+                        filled: true,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        hintText: "e.g. 3500",
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // ✅ ROOMS SECTION - UPDATED WITH KITCHENS & BALCONIES
+                  const Text(
+                    "Rooms",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 10),
+                  
+                  // Bedrooms
+                  const Text("Bedrooms", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 10,
+                    children: List.generate(
+                      5,
+                      (i) => _buildNumberChip(i + 1, bedrooms, (v) => setState(() => bedrooms = v)),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Bathrooms
+                  const Text("Bathrooms", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 10,
+                    children: List.generate(
+                      3,
+                      (i) => _buildNumberChip(i + 1, bathrooms, (v) => setState(() => bathrooms = v)),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  // ✅ KITCHENS - NEW INPUT
+                  const Text("Kitchens", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 10,
+                    children: List.generate(
+                      3,
+                      (i) => _buildNumberChip(i + 1, kitchens, (v) => setState(() => kitchens = v)),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // ✅ BALCONIES - NEW INPUT (starts from 0)
+                  const Text("Balconies", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 10,
+                    children: List.generate(
+                      4,
+                      (i) => _buildNumberChip(i, balconies, (v) => setState(() => balconies = v)),
+                    ),
+                  ),
+
+                  const SizedBox(height: 25),
+
+                  // Amenities
+                  const Text(
+                    "Amenities",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 10),
+                  _buildAmenitiesGrid(),
+
+                  const SizedBox(height: 30),
+
+                  // Publish Button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 54,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF276152),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      onPressed: publishApartment,
+                      child: const Text(
+                        "Publish Apartment",
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-             
-
-            // Rent
-            const SizedBox(height: 30),
-            _buildInputWithLabel(
-              "Monthly Rent (EGP)",
-              TextField(
-                controller: rentController,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  fillColor: Colors.white,
-                  filled: true,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  hintText: "e.g. 3500",
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 20),
-            // Rooms Grid
-            const Text("Rooms",
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(child: _buildDropdown("Bedrooms", bedrooms, (v) {
-                  setState(() => bedrooms = v!);
-                })),
-                const SizedBox(width: 12),
-                Expanded(child: _buildDropdown("Bathrooms", bathrooms, (v) {
-                  setState(() => bathrooms = v!);
-                })),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(child: _buildDropdown("Living Rooms", livingrooms, (v) {
-                  setState(() => livingrooms = v!);
-                })),
-                const SizedBox(width: 12),
-                Expanded(child: _buildDropdown("Kitchens", kitchens, (v) {
-                  setState(() => kitchens = v!);
-                })),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(child: _buildDropdown("Balconies", balconies, (v) {
-                  setState(() => balconies = v!);
-                }, max: 3)),
-                const SizedBox(width: 12),
-                const Expanded(child: SizedBox()),
-              ],
-            ),
-
-            const SizedBox(height: 25),
-            // Amenities
-            const Text(
-              "Amenities",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: 10),
-            _buildAmenitiesGrid(),
-
-            const SizedBox(height: 30),
-
-            SizedBox(
-              width: double.infinity,
-              height: 54,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF276152),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-                onPressed: publishApartment,
-                child: const Text(
-                  "Publish Apartment",
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -423,9 +459,7 @@ class _AddApartmentPageState extends State<AddApartmentPage> {
                           child: Container(
                             width: 120,
                             decoration: BoxDecoration(
-                              border: Border.all(
-                                color: const Color(0xFF276152),
-                              ),
+                              border: Border.all(color: const Color(0xFF276152)),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: const Icon(
@@ -532,59 +566,38 @@ class _AddApartmentPageState extends State<AddApartmentPage> {
     );
   }
 
-  Widget _buildAmenitiesGrid() {
-    return GridView.builder(
-      physics: const NeverScrollableScrollPhysics(),
-      shrinkWrap: true,
-      itemCount: amenities.length,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 4,
+  Widget _buildNumberChip(int number, int selected, Function(int) onSelect) {
+    final bool isSelected = selected == number;
+    return ChoiceChip(
+      showCheckmark: true,
+      checkmarkColor: Colors.white,
+      label: Text(
+        number.toString(),
+        style: TextStyle(color: isSelected ? Colors.white : Colors.black),
       ),
-      itemBuilder: (context, i) {
-        return CheckboxListTile(
-          value: selectedAmenities[amenities[i]],
-          onChanged: (v) {
-            setState(() {
-              selectedAmenities[amenities[i]] = v ?? false;
-            });
-          },
-          title: Text(amenities[i]),
-          controlAffinity: ListTileControlAffinity.leading,
-        );
-      },
+      selected: isSelected,
+      selectedColor: const Color(0xFF276152),
+      backgroundColor: Colors.grey.shade200,
+      onSelected: (_) => onSelect(number),
     );
   }
-  // ---------------- Dropdown Helper ---------------- //
-  Widget _buildDropdown(String label, int value, Function(int?) onChanged, {int max = 5}) {
+
+  Widget _buildAmenitiesGrid() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-        const SizedBox(height: 6),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade300),
-          ),
-          child: DropdownButton<int>(
-            value: value,
-            isExpanded: true,
-            underline: const SizedBox(),
-            items: List.generate(
-              max,
-              (index) => DropdownMenuItem(
-                value: index,
-                child: Text("$index"),
-              ),
-            ),
-            onChanged: onChanged,
-          ),
-        ),
-      ],
+      children: amenities.map((a) {
+        return CheckboxListTile(
+          value: selectedAmenities[a],
+          activeColor: const Color(0xFF276152),
+          checkColor: Colors.white,
+          title: Text(a),
+          onChanged: (v) {
+            setState(() {
+              selectedAmenities[a] = v!;
+            });
+          },
+        );
+      }).toList(),
     );
   }
 }

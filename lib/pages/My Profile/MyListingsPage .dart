@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:sakkeny_app/models/cards.dart';
@@ -16,6 +17,44 @@ class _MyListingsPageState extends State<MyListingsPage> {
   final PropertyService _propertyService = PropertyService();
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
+  String _fullName = "User";
+  String? _imageUrl;
+  bool _loadingUser = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  /* ================= LOAD USER DATA ================= */
+
+  Future<void> _loadUserData() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      if (doc.exists) {
+        final data = doc.data();
+        setState(() {
+          _fullName = data?['first name'] ?? "User";
+          _imageUrl = data?['profile_image'] ?? user.photoURL;
+          _loadingUser = false;
+        });
+      } else {
+        _loadingUser = false;
+      }
+    } catch (e) {
+      debugPrint('Error loading user data: $e');
+      _loadingUser = false;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -33,16 +72,12 @@ class _MyListingsPageState extends State<MyListingsPage> {
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
-              child: CircularProgressIndicator(
-                color: Color(0xFF276152),
-              ),
+              child: CircularProgressIndicator(color: Color(0xFF276152)),
             );
           }
 
           if (snapshot.hasError) {
-            return Center(
-              child: Text('Error: ${snapshot.error}'),
-            );
+            return Center(child: Text('Error: ${snapshot.error}'));
           }
 
           final properties = snapshot.data ?? [];
@@ -68,11 +103,10 @@ class _MyListingsPageState extends State<MyListingsPage> {
           final result = await Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => const AddApartmentPage(),
+              builder: (_) => const AddApartmentPage(),
             ),
           );
-          
-          // Refresh if property was added
+
           if (result == true && mounted) {
             setState(() {});
           }
@@ -85,31 +119,35 @@ class _MyListingsPageState extends State<MyListingsPage> {
   /* ================= PROFILE HEADER ================= */
 
   Widget _profileHeader() {
-    final user = _auth.currentUser;
-    
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Row(
         children: [
           CircleAvatar(
             radius: 28,
-            backgroundImage: user?.photoURL != null
-                ? NetworkImage(user!.photoURL!)
+            backgroundImage: _imageUrl != null
+                ? NetworkImage(_imageUrl!)
                 : const NetworkImage(
                     "https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png",
-                  ) as ImageProvider,
+                  ),
           ),
           const SizedBox(width: 12),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                user?.displayName ?? "User",
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              _loadingUser
+                  ? const SizedBox(
+                      width: 80,
+                      height: 14,
+                      child: LinearProgressIndicator(),
+                    )
+                  : Text(
+                      _fullName,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
               const SizedBox(height: 4),
               const Text(
                 "My Apartments",
@@ -125,222 +163,193 @@ class _MyListingsPageState extends State<MyListingsPage> {
   /* ================= GRID ================= */
 
   Widget _gridListings(List<PropertyModel> properties) {
-  return GridView.builder(
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-    itemCount: properties.length,
-    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-      crossAxisCount: 2,
-      crossAxisSpacing: 14,
-      mainAxisSpacing: 14,
-      childAspectRatio: 0.72, // ✅ Adjusted for better fit
-    ),
-    itemBuilder: (context, index) {
-      final property = properties[index];
-      return _apartmentCard(property);
-    },
-  );
-}
+    return GridView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      itemCount: properties.length,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 14,
+        mainAxisSpacing: 14,
+        childAspectRatio: 0.72,
+      ),
+      itemBuilder: (context, index) {
+        final property = properties[index];
+        return _apartmentCard(property);
+      },
+    );
+  }
 
   /* ================= CARD ================= */
 
   Widget _apartmentCard(PropertyModel property) {
-  return InkWell(
-    borderRadius: BorderRadius.circular(16),
-    onTap: () {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => PropertyDetailsPage(property: property),
-        ),
-      );
-    },
-    child: Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PropertyDetailsPage(property: property),
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Image - Takes 55% of height
-          Expanded(
-            flex: 11,
-            child: Stack(
-              children: [
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(16),
-                    ),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(16),
-                    ),
-                    child: property.mainImage.isNotEmpty
-                        ? Image.network(
-                            property.mainImage,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return const Center(
-                                child: Icon(Icons.home, size: 35, color: Colors.grey),
-                              );
-                            },
-                          )
-                        : const Center(
-                            child: Icon(Icons.home, size: 35, color: Colors.grey),
-                          ),
-                  ),
-                ),
-                // Status badge on image
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: _statusChip(property.status == 'available'),
-                ),
-              ],
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
-          ),
-
-          // Info - Takes 45% of height
-          Expanded(
-            flex: 9,
-            child: Padding(
-              padding: const EdgeInsets.all(8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              flex: 11,
+              child: Stack(
                 children: [
-                  // Title
-                  Text(
-                    property.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
+                  ClipRRect(
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(16),
                     ),
-                  ),
-                  const SizedBox(height: 3),
-
-                  // Location
-                  Row(
-                    children: [
-                      Icon(Icons.location_on, size: 11, color: Colors.grey[600]),
-                      const SizedBox(width: 2),
-                      Expanded(
-                        child: Text(
-                          property.location.city,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 10,
-                          ),
-                        ),
+                    child: Image.network(
+                      property.mainImage,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const Center(
+                        child: Icon(Icons.home, size: 35, color: Colors.grey),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-
-                  // Price
-                  Text(
-                    "${property.price.toStringAsFixed(0)} EGP",
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12,
-                      color: Color(0xFF276152),
                     ),
                   ),
-                  const Spacer(),
-
-                  // Action Buttons
-                  Container(
-                    height: 28,
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey[300]!),
-                      borderRadius: BorderRadius.circular(8),
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: _statusChip(property.status == 'available'),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              flex: 9,
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      property.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                    child: Row(
+                    const SizedBox(height: 3),
+                    Row(
                       children: [
+                        Icon(Icons.location_on,
+                            size: 11, color: Colors.grey[600]),
+                        const SizedBox(width: 2),
                         Expanded(
-                          child: InkWell(
-                            onTap: () => _editApartment(property),
-                            borderRadius: const BorderRadius.horizontal(
-                              left: Radius.circular(8),
-                            ),
-                            child: const Icon(
-                              Icons.edit_outlined,
-                              size: 15,
-                              color: Color(0xFF276152),
-                            ),
-                          ),
-                        ),
-                        Container(
-                          width: 1,
-                          color: Colors.grey[300],
-                        ),
-                        Expanded(
-                          child: InkWell(
-                            onTap: () => _deleteApartment(property),
-                            borderRadius: const BorderRadius.horizontal(
-                              right: Radius.circular(8),
-                            ),
-                            child: const Icon(
-                              Icons.delete_outline,
-                              size: 15,
-                              color: Colors.red,
+                          child: Text(
+                            property.location.city,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 10,
                             ),
                           ),
                         ),
                       ],
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 4),
+                    Text(
+                      "${property.price.toStringAsFixed(0)} EGP",
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                        color: Color(0xFF276152),
+                      ),
+                    ),
+                    const Spacer(),
+
+                    // ===== EDIT & DELETE (ADDED) =====
+                    Container(
+                      height: 28,
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey[300]!),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: InkWell(
+                              onTap: () => _editApartment(property),
+                              child: const Icon(
+                                Icons.edit_outlined,
+                                size: 15,
+                                color: Color(0xFF276152),
+                              ),
+                            ),
+                          ),
+                          Container(width: 1, color: Colors.grey[300]),
+                          Expanded(
+                            child: InkWell(
+                              onTap: () => _deleteApartment(property),
+                              child: const Icon(
+                                Icons.delete_outline,
+                                size: 15,
+                                color: Colors.red,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
-Widget _statusChip(bool available) {
-  return Container(
-    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-    decoration: BoxDecoration(
-      color: available 
-          ? Colors.green.withOpacity(0.9) 
-          : Colors.red.withOpacity(0.9),
-      borderRadius: BorderRadius.circular(6),
-    ),
-    child: Text(
-      available ? "Available" : "Rented",
-      style: const TextStyle(
-        fontSize: 9,
-        color: Colors.white,
-        fontWeight: FontWeight.w600,
+  Widget _statusChip(bool available) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: available ? Colors.green : Colors.red,
+        borderRadius: BorderRadius.circular(6),
       ),
-    ),
-  );
-}
+      child: Text(
+        available ? "Available" : "Rented",
+        style: const TextStyle(
+          fontSize: 9,
+          color: Colors.white,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  /* ================= EDIT ================= */
+
   void _editApartment(PropertyModel property) {
-    // TODO: Navigate to edit page (you can create EditApartmentPage later)
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Edit functionality coming soon!'),
       ),
     );
   }
+
+  /* ================= DELETE ================= */
 
   void _deleteApartment(PropertyModel property) {
     showDialog(
@@ -356,13 +365,10 @@ Widget _statusChip(bool available) {
             child: const Text("Cancel"),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () async {
-              Navigator.pop(context); // Close dialog
-              
-              // Show loading
+              Navigator.pop(context);
+
               showDialog(
                 context: context,
                 barrierDismissible: false,
@@ -370,15 +376,13 @@ Widget _statusChip(bool available) {
                   child: CircularProgressIndicator(),
                 ),
               );
-              
-              // Delete property
+
               bool success = await _propertyService.deleteProperty(
                 property.propertyId,
               );
-              
+
               if (mounted) {
-                Navigator.pop(context); // Close loading
-                
+                Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
@@ -386,7 +390,8 @@ Widget _statusChip(bool available) {
                           ? '✅ Property deleted successfully'
                           : '❌ Failed to delete property',
                     ),
-                    backgroundColor: success ? Colors.green : Colors.red,
+                    backgroundColor:
+                        success ? Colors.green : Colors.red,
                   ),
                 );
               }
@@ -416,10 +421,7 @@ Widget _statusChip(bool available) {
           const SizedBox(height: 8),
           Text(
             "Tap the + button to add your first property",
-            style: TextStyle(
-              color: Colors.grey[600],
-              fontSize: 14,
-            ),
+            style: TextStyle(color: Colors.grey[600]),
           ),
         ],
       ),

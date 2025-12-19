@@ -20,6 +20,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   String? _imageUrl;
   String? _name = "";
+  String? _lastname = "";
   String? _status = "HomeFinder"; // ثابتة زى كودك
   bool _isUploading = false;
 
@@ -27,8 +28,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void initState() {
     super.initState();
     _imageUrl = user?.photoURL;
-    _name = user?.email ?? "User"; // أو لو عندك اسم فى Firestore ممكن تجيبيه
+    _loadUserData();
   }
+
+  Future<void> _loadUserData() async {
+    if (user == null) return;
+
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user!.uid)
+          .get();
+
+      if (doc.exists) {
+        final data = doc.data();
+        setState(() {
+          _name = data?['first name'] ?? "User";
+          _lastname = data?['last name'] ?? "";
+          _imageUrl = data?['profile_image'] ?? user!.photoURL;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading user data: $e');
+    }
+  }
+
+
+
+
 
   Future<void> _deleteOldProfileImage() async {
     try {
@@ -90,7 +117,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         await user!.updatePhotoURL(finalUrl);
       }
 
-      await FirebaseFirestore.instance.collection('images').doc(user!.uid).set({
+      await FirebaseFirestore.instance.collection('users').doc(user!.uid).set({
         'profile_image': finalUrl,
         'email': user!.email,
         'last_updated': FieldValue.serverTimestamp(),
@@ -181,7 +208,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
               SizedBox(height: 14),
               Text(
-                _name ?? "User",
+                '$_name $_lastname',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
@@ -276,9 +303,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       text: "Logout",
                       iconColor: Colors.red,
                       textColor: Colors.red,
-                      onTap: () async {
-                        await fb_auth.FirebaseAuth.instance.signOut();
-                        Navigator.pushReplacement(
+                      onTap: () {
+                        Navigator.push(
                           context,
                           MaterialPageRoute(builder: (_) => SignIn()),
                         );
@@ -303,6 +329,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }) {
     return Card(
       margin: EdgeInsets.symmetric(vertical: 4),
+      color: Colors.white,
       elevation: 0,
       child: ListTile(
         leading: Icon(icon, color: iconColor),
@@ -313,7 +340,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             color: textColor ?? Colors.black87,
           ),
         ),
-        trailing: Icon(
+        trailing: const Icon(
           Icons.keyboard_arrow_right,
           size: 22,
           color: Colors.grey,

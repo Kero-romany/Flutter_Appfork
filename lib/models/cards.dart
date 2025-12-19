@@ -14,10 +14,8 @@ class PropertyModel {
   final PropertyLocation location;
   
   // Property Type & Features
-  final String propertyType; // "Apartment"|"Bungalow"|"Duplex"|"Villa"
   final int bedrooms;
   final int bathrooms;
-  final int livingrooms;
   final int kitchens;
   final int balconies;
   
@@ -31,13 +29,11 @@ class PropertyModel {
   
   // Ratings
   final double rating;
-  final int reviews;
+
   
   // Status
   final String status; // "available"|"rented"|"pending"
   final bool isPublished;
-  
- 
 
   PropertyModel({
     required this.propertyId,
@@ -49,10 +45,8 @@ class PropertyModel {
     required this.price,
     required this.priceDisplay,
     required this.location,
-    required this.propertyType,
     required this.bedrooms,
     required this.bathrooms,
-    this.livingrooms = 1,
     this.kitchens = 1,
     this.balconies = 0,
     required this.amenities,
@@ -60,7 +54,6 @@ class PropertyModel {
     required this.images,
     required this.mainImage,
     this.rating = 0.0,
-    this.reviews = 0,
     this.status = 'available',
     this.isPublished = true,
 
@@ -78,10 +71,9 @@ class PropertyModel {
       price: (data['price'] ?? 0).toDouble(),
       priceDisplay: data['priceDisplay'] ?? '',
       location: PropertyLocation.fromMap(data['location'] ?? {}),
-      propertyType: data['propertyType'] ?? 'Apartment',
+
       bedrooms: data['bedrooms'] ?? 1,
       bathrooms: data['bathrooms'] ?? 1,
-      livingrooms: data['livingrooms'] ?? 1,
       kitchens: data['kitchens'] ?? 1,
       balconies: data['balconies'] ?? 0,
       amenities: List<String>.from(data['amenities'] ?? []),
@@ -89,7 +81,7 @@ class PropertyModel {
       images: List<String>.from(data['images'] ?? []),
       mainImage: data['mainImage'] ?? '',
       rating: (data['rating'] ?? 0.0).toDouble(),
-      reviews: data['reviews'] ?? 0,
+
       status: data['status'] ?? 'available',
       isPublished: data['isPublished'] ?? true,
 
@@ -109,10 +101,8 @@ class PropertyModel {
       'price': price,
       'priceDisplay': priceDisplay,
       'location': location.toMap(),
-      'propertyType': propertyType,
       'bedrooms': bedrooms,
       'bathrooms': bathrooms,
-      'livingrooms': livingrooms,
       'kitchens': kitchens,
       'balconies': balconies,
       'amenities': amenities,
@@ -120,7 +110,7 @@ class PropertyModel {
       'images': images,
       'mainImage': mainImage,
       'rating': rating,
-      'reviews': reviews,
+   
       'status': status,
       'isPublished': isPublished,
 
@@ -156,10 +146,9 @@ class PropertyModel {
         area: location.split(',').length > 1 ? location.split(',')[1].trim() : '',
         fullAddress: location,
       ),
-      propertyType: 'Apartment',
+
       bedrooms: bedroom,
       bathrooms: bathroom,
-      livingrooms: Livingroom,
       kitchens: kitchen,
       balconies: balcony,
       amenities: isWifi ? ['Wifi'] : [],
@@ -167,38 +156,34 @@ class PropertyModel {
       images: [image],
       mainImage: image,
       rating: rating,
-      reviews: reviews,
+ 
 
     );
   }
+
 }
 
 // ✅ Location Model
 class PropertyLocation {
   final String city;
   final String area;
-  final String? street;
+
   final String fullAddress;
-  final double? latitude;
-  final double? longitude;
+
 
   PropertyLocation({
     required this.city,
     required this.area,
-    this.street,
+ 
     required this.fullAddress,
-    this.latitude,
-    this.longitude,
+
   });
 
   factory PropertyLocation.fromMap(Map<String, dynamic> map) {
     return PropertyLocation(
       city: map['city'] ?? '',
       area: map['area'] ?? '',
-      street: map['street'],
       fullAddress: map['fullAddress'] ?? '',
-      latitude: map['latitude']?.toDouble(),
-      longitude: map['longitude']?.toDouble(),
     );
   }
 
@@ -206,10 +191,7 @@ class PropertyLocation {
     return {
       'city': city,
       'area': area,
-      'street': street,
       'fullAddress': fullAddress,
-      'latitude': latitude,
-      'longitude': longitude,
     };
   }
 }

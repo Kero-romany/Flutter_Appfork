@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sakkeny_app/models/cards.dart';
+import 'package:sakkeny_app/pages/bottom_nav.dart';
 import 'package:sakkeny_app/pages/property_card.dart';
 import 'package:sakkeny_app/services/property_service.dart';
 import 'package:sakkeny_app/pages/AddApartmentPage.dart';
@@ -8,7 +9,23 @@ import 'package:sakkeny_app/pages/SearchPage.dart';
 import 'package:sakkeny_app/pages/property.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  // Add these optional filter parameters
+  final double? minPrice;
+  final double? maxPrice;
+  final String? propertyType;
+  final int? bedrooms;
+  final int? bathrooms;
+  final List<String>? amenities;
+
+  const HomePage({
+    super.key,
+    this.minPrice,
+    this.maxPrice,
+    this.propertyType,
+    this.bedrooms,
+    this.bathrooms,
+    this.amenities, int? kitchens, int? balconies,
+  });
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -17,6 +34,52 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final PropertyService _propertyService = PropertyService();
   List<PropertyModel> _allProperties = [];
+  bool _hasFilters = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Check if any filters are applied
+    _hasFilters = widget.minPrice != null ||
+        widget.maxPrice != null ||
+        widget.propertyType != null ||
+        widget.bedrooms != null ||
+        widget.bathrooms != null ||
+        (widget.amenities != null && widget.amenities!.isNotEmpty);
+
+    if (_hasFilters) {
+      print('📊 Applying filters...');
+      print('Price: ${widget.minPrice} - ${widget.maxPrice}');
+      print('Type: ${widget.propertyType}');
+      print('Bedrooms: ${widget.bedrooms}');
+      print('Bathrooms: ${widget.bathrooms}');
+      print('Amenities: ${widget.amenities}');
+    }
+  }
+
+  // Helper method to get filtered properties as a stream
+  Stream<List<PropertyModel>> _getFilteredPropertiesStream() async* {
+    print('🔍 Filtering with:');
+    print('  Min Price: ${widget.minPrice}');
+    print('  Max Price: ${widget.maxPrice}');
+    print('  Property Type: ${widget.propertyType}');
+    print('  Bedrooms: ${widget.bedrooms}');
+    print('  Bathrooms: ${widget.bathrooms}');
+    print('  Amenities: ${widget.amenities}');
+    
+    List<PropertyModel> filteredProperties =
+        await _propertyService.filterProperties(
+      minPrice: widget.minPrice,
+      maxPrice: widget.maxPrice,
+      propertyType: widget.propertyType,
+      bedrooms: widget.bedrooms,
+      bathrooms: widget.bathrooms,
+      amenities: widget.amenities,
+    );
+    
+    print('✅ Found ${filteredProperties.length} filtered properties');
+    yield filteredProperties;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -126,11 +189,31 @@ class _HomePageState extends State<HomePage> {
 
                   const SizedBox(height: 20),
 
-                  /// Header
-                  const Text(
-                    'Recommended Property',
-                    style: TextStyle(
-                        fontSize: 20, fontWeight: FontWeight.bold),
+                  /// Header - Show if filters are applied
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        _hasFilters ? 'Filtered Results' : 'Recommended Property',
+                        style: const TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.bold),
+                      ),
+                      if (_hasFilters)
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>  Navigation(),
+                              ),
+                            );
+                          },
+                          child: const Text(
+                            'Clear',
+                            style: TextStyle(color: Color(0xFF276152)),
+                          ),
+                        ),
+                    ],
                   ),
                 ],
               ),
@@ -139,7 +222,10 @@ class _HomePageState extends State<HomePage> {
             /// ================= PROPERTIES =================
             Expanded(
               child: StreamBuilder<List<PropertyModel>>(
-                stream: _propertyService.getAllProperties(),
+                // Use filtered stream if filters are applied, otherwise get all
+                stream: _hasFilters
+                    ? _getFilteredPropertiesStream()
+                    : _propertyService.getAllProperties(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(
@@ -152,8 +238,48 @@ class _HomePageState extends State<HomePage> {
                   }
 
                   if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return const Center(
-                        child: Text('No properties available'));
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.search_off,
+                            size: 64,
+                            color: Colors.grey,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            _hasFilters
+                                ? 'No properties found matching your filters'
+                                : 'No properties available',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey,
+                            ),
+                          ),
+                          if (_hasFilters) ...[
+                            const SizedBox(height: 16),
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF276152),
+                              ),
+                              onPressed: () {
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>  Navigation(),
+                                  ),
+                                );
+                              },
+                              child: const Text(
+                                'Clear Filters',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    );
                   }
 
                   _allProperties = snapshot.data!;

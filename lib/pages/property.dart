@@ -18,13 +18,22 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> {
   bool _isCheckingFavorite = true;
   final PropertyService _propertyService = PropertyService();
 
+  // ✅ ALL POSSIBLE AMENITIES (must match AddApartmentPage)
+  final List<String> allAmenities = [
+    "Air Conditioning",
+    "Wifi",
+    "Closet",
+    "Iron",
+    "TV",
+    "Dedicated Workspace",
+  ];
+
   @override
   void initState() {
     super.initState();
     _checkIfSaved();
   }
 
-  // ✅ Check if property is already saved
   Future<void> _checkIfSaved() async {
     bool saved = await _propertyService.isPropertySaved(widget.property.propertyId);
     if (mounted) {
@@ -35,7 +44,6 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> {
     }
   }
 
-  // ✅ Toggle save/unsave
   Future<void> _toggleSave() async {
     setState(() => _isCheckingFavorite = true);
     
@@ -59,7 +67,6 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> {
     } else {
       setState(() => _isCheckingFavorite = false);
       
-      // Show error message
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -94,15 +101,218 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> {
                       onFavoriteToggle: _toggleSave,
                     ),
                     _buildDescription(widget.property),
-                    _buildAmenities(widget.property),
+                    _buildRoomDetails(widget.property),
+                    
+                    // ✅ NEW: Dynamic Amenities Section
+                    _buildAllAmenities(widget.property),
+                    
                     const SizedBox(height: 20),
                   ],
                 ),
               ),
             ),
-            _buildBottomButtons(context),
+            _BottomButtons(property: widget.property),
           ],
         ),
+      ),
+    );
+  }
+
+  // ✅ NEW: Display ALL amenities with green/red colors
+  Widget _buildAllAmenities(PropertyModel property) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Amenities',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16),
+          
+          // ✅ Display amenities in a grid (2 columns)
+          GridView.builder(
+            physics: const NeverScrollableScrollPhysics(),
+            shrinkWrap: true,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              childAspectRatio: 2.5,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+            ),
+            itemCount: allAmenities.length,
+            itemBuilder: (context, index) {
+              final amenity = allAmenities[index];
+              final isAvailable = property.amenities.contains(amenity);
+              
+              return _buildAmenityCard(
+                amenity,
+                isAvailable,
+                _getAmenityIcon(amenity),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ✅ Amenity Card with Green (Available) or Red (Not Available)
+  Widget _buildAmenityCard(String label, bool isAvailable, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: isAvailable ? Colors.green[50] : Colors.red[50],
+        border: Border.all(
+          color: isAvailable ? Colors.green[300]! : Colors.red[300]!,
+          width: 1.5,
+        ),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            size: 20,
+            color: isAvailable ? Colors.green[700] : Colors.red[700],
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: isAvailable ? Colors.green[900] : Colors.red[900],
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          Icon(
+            isAvailable ? Icons.check_circle : Icons.cancel,
+            size: 16,
+            color: isAvailable ? Colors.green[700] : Colors.red[700],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ✅ Map amenity names to icons
+  IconData _getAmenityIcon(String amenity) {
+    switch (amenity) {
+      case "Air Conditioning":
+        return Icons.ac_unit;
+      case "Wifi":
+        return Icons.wifi;
+      case "Closet":
+        return Icons.checkroom;
+      case "Iron":
+        return Icons.iron;
+      case "TV":
+        return Icons.tv;
+      case "Dedicated Workspace":
+        return Icons.desk;
+      default:
+        return Icons.check_circle_outline;
+    }
+  }
+
+  // ✅ UPDATED: Room details (kept separate from amenities)
+  Widget _buildRoomDetails(PropertyModel property) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Room Details',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _buildRoomItem(
+                  Icons.bed_outlined,
+                  '${property.bedrooms}',
+                  'Bedroom${property.bedrooms > 1 ? 's' : ''}',
+                ),
+              ),
+              Expanded(
+                child: _buildRoomItem(
+                  Icons.bathroom_outlined,
+                  '${property.bathrooms}',
+                  'Bathroom${property.bathrooms > 1 ? 's' : ''}',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildRoomItem(
+                  Icons.kitchen_outlined,
+                  '${property.kitchens}',
+                  'Kitchen${property.kitchens > 1 ? 's' : ''}',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildRoomItem(
+                  Icons.balcony_outlined,
+                  '${property.balconies}',
+                  'Balcon${property.balconies == 1 ? 'y' : 'ies'}',
+                ),
+              ),
+              const Expanded(child: SizedBox()),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRoomItem(IconData icon, String count, String label) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.symmetric(horizontal: 4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: Colors.grey[300]!),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: const Color(0xFF276152)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  count,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF276152),
+                  ),
+                ),
+                Text(
+                  label,
+                  style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -206,7 +416,6 @@ class _PropertyImageCarouselState extends State<_PropertyImageCarousel> {
           ),
         ),
         
-        // Price Badge
         Positioned(
           top: 26,
           right: 26,
@@ -227,7 +436,6 @@ class _PropertyImageCarouselState extends State<_PropertyImageCarousel> {
           ),
         ),
         
-        // Page Indicators
         if (widget.property.images.length > 1)
           Positioned(
             bottom: 26,
@@ -261,7 +469,7 @@ Widget _buildPropertyImage(PropertyModel property) {
 }
 
 // ============================================
-// PROPERTY HEADER (Title, Location, Rating, Favorite)
+// PROPERTY HEADER
 // ============================================
 class BuildPropertyHeader extends StatelessWidget {
   final PropertyModel property;
@@ -347,11 +555,6 @@ class BuildPropertyHeader extends StatelessWidget {
                   fontSize: 14,
                 ),
               ),
-              const SizedBox(width: 4),
-              Text(
-                '(${property.reviews} reviews)',
-                style: TextStyle(color: Colors.grey[600], fontSize: 14),
-              ),
             ],
           ),
         ],
@@ -361,7 +564,7 @@ class BuildPropertyHeader extends StatelessWidget {
 }
 
 // ============================================
-// DESCRIPTION SECTION
+// DESCRIPTION
 // ============================================
 Widget _buildDescription(PropertyModel property) {
   return Padding(
@@ -384,166 +587,82 @@ Widget _buildDescription(PropertyModel property) {
 }
 
 // ============================================
-// AMENITIES SECTION
+// BOTTOM BUTTONS
 // ============================================
-Widget _buildAmenities(PropertyModel property) {
-  return Padding(
-    padding: const EdgeInsets.all(16),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'What this place offers',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: _buildAmenityItem(
-                property.isWifi ? Icons.wifi : Icons.wifi_off,
-                'Wifi',
-                property.isWifi ? Colors.green[100]! : Colors.red[100]!,
-              ),
-            ),
-            Expanded(
-              child: _buildAmenityItem(
-                Icons.weekend_outlined,
-                '${property.livingrooms}\nLivingroom',
-              ),
-            ),
-            Expanded(
-              child: _buildAmenityItem(
-                Icons.bathroom_outlined,
-                '${property.bathrooms}\nBathroom',
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _buildAmenityItem(
-                Icons.bed_outlined,
-                '${property.bedrooms}\nBedroom',
-              ),
-            ),
-            Expanded(
-              child: _buildAmenityItem(
-                Icons.kitchen_outlined,
-                '${property.kitchens}\nKitchen',
-              ),
-            ),
-            Expanded(
-              child: _buildAmenityItem(
-                Icons.balcony_outlined,
-                '${property.balconies}\nBalcony',
-              ),
-            ),
-          ],
-        ),
-      ],
-    ),
-  );
-}
+class _BottomButtons extends StatelessWidget {
+  final PropertyModel property;
 
-Widget _buildAmenityItem(
-  IconData icon,
-  String label, [
-  Color color = Colors.white,
-]) {
-  return Container(
-    padding: const EdgeInsets.all(12),
-    margin: const EdgeInsets.symmetric(horizontal: 4),
-    decoration: BoxDecoration(
-      color: color,
-      border: Border.all(color: Colors.grey[300]!),
-      borderRadius: BorderRadius.circular(12),
-    ),
-    child: Row(
-      children: [
-        Icon(icon, size: 20, color: Colors.grey[700]),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 12, color: Colors.grey[800]),
-          ),
-        ),
-      ],
-    ),
-  );
-}
+  const _BottomButtons({required this.property});
 
-// ============================================
-// BOTTOM BUTTONS (Message & Book Now)
-// ============================================
-Widget _buildBottomButtons(BuildContext context) {
-  return Container(
-    padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      boxShadow: [
-        BoxShadow(
-          color: Colors.grey.withOpacity(0.2),
-          spreadRadius: 1,
-          blurRadius: 10,
-          offset: const Offset(0, -3),
-        ),
-      ],
-    ),
-    child: Row(
-      children: [
-        Expanded(
-          child: ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (context) => const MessagesPage()),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF276152),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              elevation: 0,
-            ),
-            child: const Text(
-              'Message',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.2),
+            spreadRadius: 1,
+            blurRadius: 10,
+            offset: const Offset(0, -3),
           ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const ReviewAndContinueScreen(),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => const MessagesPage()),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF276152),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF276152),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                elevation: 0,
               ),
-              elevation: 0,
-            ),
-            child: const Text(
-              'Book Now',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              child: const Text(
+                'Message',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
             ),
           ),
+          const SizedBox(width: 12),
+Expanded(
+  child: ElevatedButton(
+    onPressed: () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ReviewAndContinueScreen(
+            property: property, // pass the BottomButtons' property field
+          ),
         ),
-      ],
+      );
+    },
+    style: ElevatedButton.styleFrom(
+      backgroundColor: const Color(0xFF276152),
+      foregroundColor: Colors.white,
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      elevation: 0,
     ),
-  );
+    child: const Text(
+      'Book Now',
+      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+    ),
+  ),
+),
+        ],
+      ),
+    );
+  }
 }

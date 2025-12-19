@@ -1,30 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:sakkeny_app/models/cards.dart';
 import 'package:sakkeny_app/pages/HomePage.dart';
 import 'package:sakkeny_app/pages/MessagesPage.dart';
 import 'package:sakkeny_app/pages/My%20Profile/profile.dart';
 import 'package:sakkeny_app/pages/Saved_List.dart';
 import 'package:sakkeny_app/pages/SearchPage.dart';
-// import 'package:sakkeny_app/pages/SearchPage.dart';
 
 class Navigation extends StatefulWidget {
-
- 
   @override
   State<Navigation> createState() => _navigation();
 }
 
 class _navigation extends State<Navigation> {
   int _selectedIndex = 0;
-
+  List<PropertyModel> _allProperties = [];
   void _onItemTapped(int index) {
+
     setState(() {
       _selectedIndex = index;
     });
   }
 
-  final List<Widget> _pages = [
+  List<Widget> get _pages => [
     HomePage(),
-    PropertySearchPage(properties: []),
+    PropertySearchPage(properties: _allProperties),
     const SavedPage(),
     const MessagesPage(),
     ProfileScreen(),

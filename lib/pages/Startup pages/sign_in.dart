@@ -233,6 +233,7 @@ class _SignInState extends State<SignIn> {
                             ),
                           ),
                           child: _isLoading
+                          
                               ? const CircularProgressIndicator(
                                   color: Colors.white,
                                 )
@@ -343,6 +344,14 @@ class _SignInState extends State<SignIn> {
       await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: emailController.text.trim(),
         password: passwordController.text.trim(),
+      );
+
+      // Show success snackbar
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Login Success'),
+          backgroundColor: Colors.green,
+        ),
       );
 
       // SUCCESS — navigate

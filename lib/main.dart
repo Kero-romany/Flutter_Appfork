@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sakkeny_app/firebase_options.dart';
-import 'package:sakkeny_app/pages/Saved_List.dart';
 import 'package:sakkeny_app/pages/Startup%20pages/splash_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() async {
