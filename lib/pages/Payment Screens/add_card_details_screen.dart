@@ -686,10 +686,9 @@ class _AddCardDetailsScreenState extends State<AddCardDetailsScreen> {
       // ✅ Save card details if checkbox is checked
       if (_saveCard) {
         await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .collection('payment_methods')
+            .collection('payment')
             .add({
+          'userId': user.uid,
           'cardNumber': _cardNumberController.text.replaceAll(' ', '').substring(12), // Last 4 digits
           'cardType': _detectCardType(_cardNumberController.text),
           'cardHolder': _cardHolderController.text,

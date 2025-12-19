@@ -144,14 +144,26 @@ class _MyAccountPageState extends State<MyAccountPage> {
         child: Column(
           children: <Widget>[
             Container(
-              padding: const EdgeInsets.symmetric(vertical: 40),
-              child: const Text(
-                'My Account',
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
+              padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 16),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.white),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ),
+                  const Text(
+                    'My Account',
+                    style: TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
               ),
             ),
             Expanded(

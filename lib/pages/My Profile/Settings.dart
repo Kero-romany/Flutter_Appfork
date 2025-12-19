@@ -39,16 +39,25 @@ class _SettingsPageState extends State<SettingsPage> {
           const SizedBox(height: 40),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Align(
+            child: Stack(
               alignment: Alignment.centerLeft,
-              child: Text(
-                "Settings",
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_back, color: Colors.white),
+                  onPressed: () => Navigator.pop(context),
                 ),
-              ),
+                const Align(
+                  alignment: Alignment.center,
+                  child: Text(
+                    "Settings",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 20),
@@ -210,7 +219,7 @@ class AboutPage extends StatelessWidget {
             ),
             SizedBox(height: 10),
             Text(
-              "© 2025 All rights reserved",
+              "© 2025 All rights reserved", 
               style: TextStyle(fontSize: 15),
             ),
           ],

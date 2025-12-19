@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:sakkeny_app/models/cards.dart';
+import 'package:sakkeny_app/services/payment_service.dart';
 import 'booking_status_screen.dart';
 
 class RequestToBookScreen extends StatefulWidget {
@@ -41,6 +42,7 @@ class RequestToBookScreen extends StatefulWidget {
 class _RequestToBookScreenState extends State<RequestToBookScreen> {
   bool _isProcessing = false;
   bool _agreedToTerms = false;
+  final PaymentService _paymentService = PaymentService();
 
   // ✅ Calculate base monthly rent
   double get baseMonthlyRent => widget.property.price;
@@ -126,7 +128,7 @@ class _RequestToBookScreenState extends State<RequestToBookScreen> {
       }
 
       // Create booking document
-      await FirebaseFirestore.instance.collection('bookings').add({
+      final bookingRef = await FirebaseFirestore.instance.collection('bookings').add({
         // Property info
         'propertyId': widget.property.propertyId,
         'propertyTitle': widget.property.title,
@@ -166,6 +168,26 @@ class _RequestToBookScreenState extends State<RequestToBookScreen> {
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
+
+      // Create payment record
+      final paymentDetails = {
+        'cardNumber': widget.cardNumber.replaceAll(' ', '').substring(widget.cardNumber.replaceAll(' ', '').length - 4),
+        'cardType': widget.cardNumber.startsWith('4') ? 'Visa' : (widget.cardNumber.startsWith('5') ? 'Mastercard' : 'Unknown'),
+        'cardHolder': widget.cardHolder,
+        'expiry': widget.expiry,
+        'cvv': widget.cvv,
+        'country': widget.country,
+        'postcode': widget.postcode,
+      };
+
+      await _paymentService.createPayment(
+        propertyId: widget.property.propertyId,
+        bookingId: bookingRef.id,
+        amount: widget.totalPrice,
+        currency: 'EGP',
+        paymentMethod: 'card',
+        paymentDetails: paymentDetails,
+      );
 
       return true;
     } catch (e) {

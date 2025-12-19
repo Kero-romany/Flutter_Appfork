@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'add_card_details_screen.dart';
 
 class PaymentMethodsScreenn extends StatefulWidget {
@@ -9,7 +11,20 @@ class PaymentMethodsScreenn extends StatefulWidget {
 }
 
 class _PaymentMethodsScreennState extends State<PaymentMethodsScreenn> {
-  List<Map<String, String>> savedCards = [];
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  Stream<QuerySnapshot> _getSavedCards() {
+    final user = _auth.currentUser;
+    if (user == null) return Stream.empty();
+
+    return _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('payment')
+        .orderBy('createdAt', descending: true)
+        .snapshots();
+  }
 
   void _showPaymentMethodBottomSheet() {
     showModalBottomSheet(
@@ -26,12 +41,8 @@ class _PaymentMethodsScreennState extends State<PaymentMethodsScreenn> {
             MaterialPageRoute(
               builder: (context) => AddCardDetailsScreenn(
                 onCardAdded: (cardNumber) {
-                  setState(() {
-                    savedCards.add({
-                      'type': cardNumber.startsWith('4') ? 'Visa' : 'Mastercard',
-                      'last4': cardNumber.substring(cardNumber.length - 4),
-                    });
-                  });
+                  // Card is now saved to Firebase in the AddCardDetailsScreenn
+                  // No need to update local state as we use StreamBuilder
                 },
               ),
             ),
@@ -45,7 +56,7 @@ class _PaymentMethodsScreennState extends State<PaymentMethodsScreenn> {
     );
   }
 
-  void _deleteCard(int index) {
+  void _deleteCard(String cardId) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -57,11 +68,33 @@ class _PaymentMethodsScreennState extends State<PaymentMethodsScreenn> {
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
-              setState(() {
-                savedCards.removeAt(index);
-              });
-              Navigator.pop(context);
+            onPressed: () async {
+              try {
+                final user = _auth.currentUser;
+                if (user != null) {
+                  await _firestore
+                      .collection('users')
+                      .doc(user.uid)
+                      .collection('payment')
+                      .doc(cardId)
+                      .delete();
+                }
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Card removed successfully'),
+                    backgroundColor: Color(0xFF276152),
+                  ),
+                );
+              } catch (e) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Error removing card: $e'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Remove'),
@@ -132,70 +165,91 @@ class _PaymentMethodsScreennState extends State<PaymentMethodsScreenn> {
             const SizedBox(height: 32),
 
             // Saved Cards
-            if (savedCards.isNotEmpty) ...[
-              const Text(
-                'Saved payment methods',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black,
-                ),
-              ),
-              const SizedBox(height: 16),
-              ...savedCards.asMap().entries.map((entry) {
-                int index = entry.key;
-                Map<String, String> card = entry.value;
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey.shade300),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(Icons.credit_card, size: 24),
+            StreamBuilder<QuerySnapshot>(
+              stream: _getSavedCards(),
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return const Text('Error loading payment methods');
+                }
+
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                final cards = snapshot.data?.docs ?? [];
+
+                if (cards.isEmpty) {
+                  return const SizedBox.shrink();
+                }
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Saved payment methods',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black,
                       ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                    ),
+                    const SizedBox(height: 16),
+                    ...cards.map((doc) {
+                      final data = doc.data() as Map<String, dynamic>;
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade300),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
                           children: [
-                            Text(
-                              card['type']!,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
+                            Container(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade100,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(Icons.credit_card, size: 24),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    data['cardType'] ?? 'Unknown',
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '•••• ${data['cardNumber'] ?? '****'}',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '•••• ${card['last4']}',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey.shade600,
-                              ),
+                            IconButton(
+                              icon: const Icon(Icons.delete_outline, color: Colors.red),
+                              onPressed: () => _deleteCard(doc.id),
                             ),
                           ],
                         ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.delete_outline, color: Colors.red),
-                        onPressed: () => _deleteCard(index),
-                      ),
-                    ],
-                  ),
+                      );
+                    }).toList(),
+                    const SizedBox(height: 24),
+                  ],
                 );
-              }).toList(),
-              const SizedBox(height: 24),
-            ],
+              },
+            ),
 
             // Information Card
             Container(
