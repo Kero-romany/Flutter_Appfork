@@ -16,6 +16,9 @@ class PropertyDetailsPage extends StatefulWidget {
 class _PropertyDetailsPageState extends State<PropertyDetailsPage> {
   bool isFavorite = false;
   bool _isCheckingFavorite = true;
+  bool _isCheckingBooking = true;
+  bool _isBookedByCurrentUser = false;
+  bool _isBookedBySomeoneElse = false;
   final PropertyService _propertyService = PropertyService();
 
   // ✅ ALL POSSIBLE AMENITIES (must match AddApartmentPage)
@@ -32,6 +35,7 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> {
   void initState() {
     super.initState();
     _checkIfSaved();
+    _checkBookingStatus();
   }
 
   Future<void> _checkIfSaved() async {
@@ -40,6 +44,19 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> {
       setState(() {
         isFavorite = saved;
         _isCheckingFavorite = false;
+      });
+    }
+  }
+
+  Future<void> _checkBookingStatus() async {
+    bool bookedByUser = await _propertyService.isPropertyBookedByUser(widget.property.propertyId);
+    bool bookedByAnyone = await _propertyService.isPropertyBookedByAnyone(widget.property.propertyId);
+    
+    if (mounted) {
+      setState(() {
+        _isBookedByCurrentUser = bookedByUser;
+        _isBookedBySomeoneElse = bookedByAnyone && !bookedByUser;
+        _isCheckingBooking = false;
       });
     }
   }
@@ -111,7 +128,12 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> {
                 ),
               ),
             ),
-            _BottomButtons(property: widget.property),
+            _BottomButtons(
+              property: widget.property,
+              isBookedByCurrentUser: _isBookedByCurrentUser,
+              isBookedBySomeoneElse: _isBookedBySomeoneElse,
+              isCheckingBooking: _isCheckingBooking,
+            ),
           ],
         ),
       ),
@@ -591,8 +613,16 @@ Widget _buildDescription(PropertyModel property) {
 // ============================================
 class _BottomButtons extends StatelessWidget {
   final PropertyModel property;
+  final bool isBookedByCurrentUser;
+  final bool isBookedBySomeoneElse;
+  final bool isCheckingBooking;
 
-  const _BottomButtons({required this.property});
+  const _BottomButtons({
+    required this.property,
+    required this.isBookedByCurrentUser,
+    required this.isBookedBySomeoneElse,
+    required this.isCheckingBooking,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -643,18 +673,24 @@ class _BottomButtons extends StatelessWidget {
           const SizedBox(width: 12),
 Expanded(
   child: ElevatedButton(
-    onPressed: () {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ReviewAndContinueScreen(
-            property: property, // pass the BottomButtons' property field
-          ),
-        ),
-      );
-    },
+    onPressed: isCheckingBooking
+        ? null
+        : (isBookedByCurrentUser || isBookedBySomeoneElse)
+            ? null // Disable button if already booked
+            : () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ReviewAndContinueScreen(
+                      property: property,
+                    ),
+                  ),
+                );
+              },
     style: ElevatedButton.styleFrom(
-      backgroundColor: const Color(0xFF276152),
+      backgroundColor: (isBookedByCurrentUser || isBookedBySomeoneElse)
+          ? Colors.grey
+          : const Color(0xFF276152),
       foregroundColor: Colors.white,
       padding: const EdgeInsets.symmetric(vertical: 16),
       shape: RoundedRectangleBorder(
@@ -662,10 +698,23 @@ Expanded(
       ),
       elevation: 0,
     ),
-    child: const Text(
-      'Book Now',
-      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-    ),
+    child: isCheckingBooking
+        ? const SizedBox(
+            height: 20,
+            width: 20,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+            ),
+          )
+        : Text(
+            isBookedByCurrentUser
+                ? 'My Booking'
+                : isBookedBySomeoneElse
+                    ? 'Already Booked'
+                    : 'Book Now',
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          ),
   ),
 ),
         ],

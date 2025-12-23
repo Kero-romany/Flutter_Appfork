@@ -225,6 +225,27 @@ class _RequestToBookScreenState extends State<RequestToBookScreen> {
     setState(() => _isProcessing = true);
 
     try {
+      // Check if property is still available (not booked by someone else)
+      bool isBookedBySomeone = await _propertyService.isPropertyBookedByAnyone(widget.property.propertyId);
+      if (isBookedBySomeone) {
+        setState(() => _isProcessing = false);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('This property has already been booked by someone else.'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const BookingStatusScreen(isSuccess: false),
+            ),
+          );
+        }
+        return;
+      }
+
       // Validate booking
       final isValid = _validateBooking();
       

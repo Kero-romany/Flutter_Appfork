@@ -11,7 +11,6 @@ class PropertyService {
     return _firestore
         .collection('properties')
         .where('isPublished', isEqualTo: true)
-        .where('status', isEqualTo: 'available')
         .snapshots()
         .map((snapshot) {
           return snapshot.docs.map((doc) {
@@ -199,12 +198,11 @@ class PropertyService {
       print('  Bedrooms: $bedrooms, Bathrooms: $bathrooms');
       print('  Amenities: $amenities');
 
-      // Fetch ALL published and available properties
+      // Fetch ALL published properties (not just available ones)
       print('📤 Fetching all properties from Firestore...');
       QuerySnapshot snapshot = await _firestore
           .collection('properties')
           .where('isPublished', isEqualTo: true)
-          .where('status', isEqualTo: 'available')
           .get();
 
       print('📥 Retrieved ${snapshot.docs.length} total properties');
@@ -569,38 +567,24 @@ class PropertyService {
         return false;
       }
 
-      // Check if property exists and is available
+      // Check if property exists
       PropertyModel? property = await getPropertyById(propertyId);
       if (property == null) {
         print('Property not found');
         return false;
       }
 
-      if (property.status != 'available') {
-        print('Property is not available');
+      // Check if already booked by someone else
+      bool isBookedBySomeone = await isPropertyBookedByAnyone(propertyId);
+      if (isBookedBySomeone) {
+        print('Property is already booked by someone else');
         return false;
       }
 
-      // Update property status to rented
-      await _firestore.collection('properties').doc(propertyId).update({
-        'status': 'rented',
-      });
-
-      // Create booking record
-      String bookingId = _firestore.collection('bookings').doc().id;
-      await _firestore.collection('bookings').doc(bookingId).set({
-        'bookingId': bookingId,
-        'propertyId': propertyId,
-        'userId': currentUser.uid,
-        'startDate': startDate?.toIso8601String(),
-        'endDate': endDate?.toIso8601String(),
-        'bookedAt': FieldValue.serverTimestamp(),
-      });
-
-      print('✅ Property booked successfully');
+      print('✅ Property booking validation passed');
       return true;
     } catch (e) {
-      print('❌ Error booking property: $e');
+      print('❌ Error validating property booking: $e');
       return false;
     }
   }
@@ -650,6 +634,21 @@ class PropertyService {
       return bookingSnapshot.docs.isNotEmpty;
     } catch (e) {
       print('Error checking if property is booked: $e');
+      return false;
+    }
+  }
+
+  // ===== 19. CHECK IF PROPERTY IS BOOKED BY ANYONE =====
+  Future<bool> isPropertyBookedByAnyone(String propertyId) async {
+    try {
+      QuerySnapshot bookingSnapshot = await _firestore
+          .collection('bookings')
+          .where('propertyId', isEqualTo: propertyId)
+          .get();
+
+      return bookingSnapshot.docs.isNotEmpty;
+    } catch (e) {
+      print('Error checking if property is booked by anyone: $e');
       return false;
     }
   }
