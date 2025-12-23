@@ -341,12 +341,17 @@ class _MyListingsPageState extends State<MyListingsPage> {
 
   /* ================= EDIT ================= */
 
-  void _editApartment(PropertyModel property) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Edit functionality coming soon!'),
+  void _editApartment(PropertyModel property) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AddApartmentPage(property: property),
       ),
     );
+
+    if (result == true && mounted) {
+      setState(() {});
+    }
   }
 
   /* ================= DELETE ================= */
