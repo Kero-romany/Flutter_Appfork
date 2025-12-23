@@ -139,7 +139,7 @@ class _AddApartmentPageState extends State<AddApartmentPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('⚠️ Please enter a title'),
-          backgroundColor: Colors.orange,
+          backgroundColor: Colors.grey,
         ),
       );
       return;
@@ -149,7 +149,7 @@ class _AddApartmentPageState extends State<AddApartmentPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('⚠️ Please enter city and area'),
-          backgroundColor: Colors.orange,
+          backgroundColor: Colors.grey,
         ),
       );
       return;
@@ -159,7 +159,7 @@ class _AddApartmentPageState extends State<AddApartmentPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('⚠️ Please enter monthly rent'),
-          backgroundColor: Colors.orange,
+          backgroundColor: Colors.grey,
         ),
       );
       return;
@@ -294,7 +294,8 @@ class _AddApartmentPageState extends State<AddApartmentPage> {
           style: const TextStyle(fontWeight: FontWeight.w600),
         ),
       ),
-      body: _isUploading
+     body: SafeArea(
+        child: _isUploading
           ? const Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -489,6 +490,7 @@ class _AddApartmentPageState extends State<AddApartmentPage> {
                 ],
               ),
             ),
+      ),
     );
   }
 

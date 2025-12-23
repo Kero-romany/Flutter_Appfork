@@ -9,7 +9,7 @@ import 'package:sakkeny_app/pages/SearchPage.dart';
 import 'package:sakkeny_app/pages/property.dart';
 
 class HomePage extends StatefulWidget {
-  // Add these optional filter parameters
+  // optional filter parameters
   final double? minPrice;
   final double? maxPrice;
   final String? propertyType;
@@ -24,7 +24,9 @@ class HomePage extends StatefulWidget {
     this.propertyType,
     this.bedrooms,
     this.bathrooms,
-    this.amenities, int? kitchens, int? balconies,
+    this.amenities,
+    int? kitchens,
+    int? balconies,
   });
 
   @override
@@ -40,44 +42,27 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     // Check if any filters are applied
-    _hasFilters = widget.minPrice != null ||
+    _hasFilters =
+        widget.minPrice != null ||
         widget.maxPrice != null ||
         widget.propertyType != null ||
         widget.bedrooms != null ||
         widget.bathrooms != null ||
         (widget.amenities != null && widget.amenities!.isNotEmpty);
-
-    if (_hasFilters) {
-      print('📊 Applying filters...');
-      print('Price: ${widget.minPrice} - ${widget.maxPrice}');
-      print('Type: ${widget.propertyType}');
-      print('Bedrooms: ${widget.bedrooms}');
-      print('Bathrooms: ${widget.bathrooms}');
-      print('Amenities: ${widget.amenities}');
-    }
   }
 
   // Helper method to get filtered properties as a stream
   Stream<List<PropertyModel>> _getFilteredPropertiesStream() async* {
-    print('🔍 Filtering with:');
-    print('  Min Price: ${widget.minPrice}');
-    print('  Max Price: ${widget.maxPrice}');
-    print('  Property Type: ${widget.propertyType}');
-    print('  Bedrooms: ${widget.bedrooms}');
-    print('  Bathrooms: ${widget.bathrooms}');
-    print('  Amenities: ${widget.amenities}');
-    
-    List<PropertyModel> filteredProperties =
-        await _propertyService.filterProperties(
-      minPrice: widget.minPrice,
-      maxPrice: widget.maxPrice,
-      propertyType: widget.propertyType,
-      bedrooms: widget.bedrooms,
-      bathrooms: widget.bathrooms,
-      amenities: widget.amenities,
-    );
-    
-    print('✅ Found ${filteredProperties.length} filtered properties');
+    List<PropertyModel> filteredProperties = await _propertyService
+        .filterProperties(
+          minPrice: widget.minPrice,
+          maxPrice: widget.maxPrice,
+          propertyType: widget.propertyType,
+          bedrooms: widget.bedrooms,
+          bathrooms: widget.bathrooms,
+          amenities: widget.amenities,
+        );
+
     yield filteredProperties;
   }
 
@@ -90,15 +75,18 @@ class _HomePageState extends State<HomePage> {
         foregroundColor: Colors.white,
         onPressed: () {
           Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const AddApartmentPage()),
-          );
+  MaterialPageRoute(
+    builder: (_) => AddApartmentPage(property: null),
+  ),
+);
+
         },
         child: const Icon(Icons.add),
       ),
       body: SafeArea(
         child: Column(
           children: [
-            /// ================= TOP SECTION =================
+            // ================= TOP SECTION =================
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -118,14 +106,14 @@ class _HomePageState extends State<HomePage> {
                           SizedBox(height: 4),
                           Row(
                             children: [
-                              Icon(Icons.location_on,
-                                  color: Color(0xFF276152)),
+                              Icon(Icons.location_on, color: Color(0xFF276152)),
                               SizedBox(width: 4),
                               Text(
                                 'Feryal Street, Assiut',
                                 style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600),
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ],
                           ),
@@ -154,7 +142,9 @@ class _HomePageState extends State<HomePage> {
                           },
                           child: Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 14),
+                              horizontal: 16,
+                              vertical: 14,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.grey[100],
                               borderRadius: BorderRadius.circular(30),
@@ -189,23 +179,25 @@ class _HomePageState extends State<HomePage> {
 
                   const SizedBox(height: 20),
 
-                  /// Header - Show if filters are applied
+                  /// Header - Show only if filters are applied
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        _hasFilters ? 'Filtered Results' : 'Recommended Property',
+                        _hasFilters
+                            ? 'Filtered Results'
+                            : 'Recommended Property',
                         style: const TextStyle(
-                            fontSize: 20, fontWeight: FontWeight.bold),
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       if (_hasFilters)
                         TextButton(
                           onPressed: () {
                             Navigator.pushReplacement(
                               context,
-                              MaterialPageRoute(
-                                builder: (_) =>  Navigation(),
-                              ),
+                              MaterialPageRoute(builder: (_) => Navigation()),
                             );
                           },
                           child: const Text(
@@ -228,13 +220,11 @@ class _HomePageState extends State<HomePage> {
                     : _propertyService.getAllProperties(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(
-                        child: CircularProgressIndicator());
+                    return const Center(child: CircularProgressIndicator());
                   }
 
                   if (snapshot.hasError) {
-                    return Center(
-                        child: Text('Error: ${snapshot.error}'));
+                    return Center(child: Text('Error: ${snapshot.error}'));
                   }
 
                   if (!snapshot.hasData || snapshot.data!.isEmpty) {
@@ -267,7 +257,7 @@ class _HomePageState extends State<HomePage> {
                                 Navigator.pushReplacement(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (_) =>  Navigation(),
+                                    builder: (_) => Navigation(),
                                   ),
                                 );
                               },
@@ -283,16 +273,15 @@ class _HomePageState extends State<HomePage> {
                   }
 
                   _allProperties = snapshot.data!;
-
                   return GridView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                      childAspectRatio: 0.75,
-                    ),
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                          childAspectRatio: 0.75,
+                        ),
                     itemCount: _allProperties.length,
                     itemBuilder: (context, index) {
                       final property = _allProperties[index];
@@ -301,9 +290,8 @@ class _HomePageState extends State<HomePage> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => PropertyDetailsPage(
-                                property: property,
-                              ),
+                              builder: (_) =>
+                                  PropertyDetailsPage(property: property),
                             ),
                           );
                         },
