@@ -227,7 +227,10 @@ class _MyListingsPageState extends State<MyListingsPage> {
                   Positioned(
                     top: 8,
                     right: 8,
-                    child: _statusChip(property.status == 'available'),
+                    child: GestureDetector(
+                      onTap: () => _toggleStatus(property),
+                      child: _statusChip(property.status == 'available'),
+                    ),
                   ),
                 ],
               ),
@@ -406,6 +409,59 @@ class _MyListingsPageState extends State<MyListingsPage> {
         ],
       ),
     );
+  }
+
+  /* ================= TOGGLE STATUS ================= */
+
+  void _toggleStatus(PropertyModel property) async {
+    final newStatus = property.status == 'available' ? 'rented' : 'available';
+
+    final updatedProperty = PropertyModel(
+      propertyId: property.propertyId,
+      userId: property.userId,
+      userName: property.userName,
+      userImage: property.userImage,
+      title: property.title,
+      description: property.description,
+      price: property.price,
+      priceDisplay: property.priceDisplay,
+      location: property.location,
+      bedrooms: property.bedrooms,
+      bathrooms: property.bathrooms,
+      kitchens: property.kitchens,
+      balconies: property.balconies,
+      amenities: property.amenities,
+      isWifi: property.isWifi,
+      images: property.images,
+      mainImage: property.mainImage,
+      rating: property.rating,
+      status: newStatus,
+      isPublished: property.isPublished,
+    );
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+
+    bool success = await _propertyService.updateProperty(updatedProperty);
+
+    if (mounted) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            success
+                ? '✅ Status updated to $newStatus'
+                : '❌ Failed to update status',
+          ),
+          backgroundColor: success ? Colors.green : Colors.red,
+        ),
+      );
+    }
   }
 
   Widget _emptyState() {
